@@ -1,0 +1,72 @@
+# -------------------------
+# OS / 편집기 임시 파일
+# -------------------------
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+*.tmp
+*.bak
+*.old
+*.autosave
+
+# -------------------------
+# 빌드 산출물
+# -------------------------
+*.o
+*.so
+*.a
+*.out
+*.exe
+
+# 빌드 디렉토리
+/build/
+/bin/
+/lib/
+/obj/
+/out/
+
+# -------------------------
+# CMake / Ninja
+# -------------------------
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+*.ninja
+.ninja_deps
+.ninja_log
+
+# -------------------------
+# Qt 관련
+# -------------------------
+*.pro.user
+*.qmake.stash
+*.qmake.cache
+*.qmlc
+*.jsc
+*.moc
+*.moc.cpp
+moc_*
+ui_*.h
+qrc_*.cpp
+*.qmlproject.user
+*.qmlproject.user.*
+
+# -------------------------
+# IDE 관련
+# -------------------------
+# Qt Creator
+*.pro.user.*
+*.creator
+*.creator.user*
+*.files
+*.includes
+*.config
+
+# JetBrains (CLion 등)
+.idea/
+
+# VSCode
+.vscode/
