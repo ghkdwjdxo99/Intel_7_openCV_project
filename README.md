@@ -1,0 +1,1 @@
+# Intel_7_openCV_project
