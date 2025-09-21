@@ -26,7 +26,7 @@ Thumbs.db
 /lib/
 /obj/
 /out/
-
+build-puzzle-Desktop-Debug/
 # -------------------------
 # CMake / Ninja
 # -------------------------
