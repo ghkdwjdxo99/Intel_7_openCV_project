@@ -15,6 +15,12 @@ public:
     WebcamCapture(QWidget *parent = nullptr);
     ~WebcamCapture();
 
+signals:
+    void switchToMakePuzzle();    // 5 or 8 send
+
+private slots:
+    void on_capture_btn_clicked();
+
 private:
     Ui::webcam_capture *webcam_capture_ui;
 };

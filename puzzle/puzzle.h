@@ -16,7 +16,7 @@ public:
     ~puzzle();
 
 signals:
-    void switchToWebcam();   // 버튼 눌렀을 때 시그널 발생
+    void switchToWebcam(int puzzleType);    // 5 or 8 send
 
 private slots:
     void on_cameraButton_clicked();
