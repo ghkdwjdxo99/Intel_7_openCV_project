@@ -1,6 +1,9 @@
 #include "puzzle.h"
+
 #include "webcam_capture.h"   // 클래스 include
 #include "make_puzzle_image.h"
+
+#include "playpage.h"
 
 #include <QApplication>
 #include <QStackedWidget>
