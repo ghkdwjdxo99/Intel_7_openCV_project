@@ -15,11 +15,15 @@ public:
     puzzle(QWidget *parent = nullptr);
     ~puzzle();
 
+signals:
+    void switchToWebcam();  // 화면 전환 시그널
+
 private slots:
     void on_cameraButton_clicked();
     void on_imageButton_clicked();
 
 private:
-    Ui::puzzle *ui;
+    Ui::puzzle *main_ui;
 };
+
 #endif // PUZZLE_H
