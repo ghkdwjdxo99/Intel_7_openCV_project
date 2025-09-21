@@ -4,6 +4,7 @@
 #include "make_puzzle_image.h"
 
 #include "playpage.h"
+#include "successdialog.h"
 
 #include <QApplication>
 #include <QStackedWidget>
@@ -30,6 +31,12 @@ int main(int argc, char *argv[])
 
     QObject::connect(puzzlePage, &puzzle::switchToWebcam, [&]() {
         stacked.setCurrentIndex(1);
+    });
+
+    // successdialog 연결 추가
+    SuccessDialog *successDlg = new SuccessDialog;
+    QObject::connect(successDlg, &SuccessDialog::backToMain, [&]() {
+        stacked.setCurrentIndex(0);   // 메인 화면(Page0)으로 전환
     });
 
     stacked.setCurrentIndex(0);
