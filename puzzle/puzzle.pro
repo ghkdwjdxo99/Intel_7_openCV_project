@@ -9,13 +9,18 @@ CONFIG += c++11
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+    draggablelistwidget.cpp \
     main.cpp \
+    playpage.cpp \
     puzzle.cpp
 
 HEADERS += \
+    draggablelistwidget.h \
+    playpage.h \
     puzzle.h
 
 FORMS += \
+    playpage.ui \
     puzzle.ui
 
 # Default rules for deployment.
