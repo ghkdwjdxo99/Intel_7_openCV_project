@@ -1,9 +1,5 @@
 #include "puzzle.h"
-
-#include "webcam_capture.h"   // 클래스 include
-#include "make_puzzle_image.h"
-
-#include "playpage.h"
+#include "webcam_capture.h"
 
 #include <QApplication>
 #include <QStackedWidget>
@@ -14,27 +10,25 @@ int main(int argc, char *argv[])
 
     QStackedWidget stacked;
 
-    // Puzzle 화면
+//    puzzle w;
+//    w.show();
+
+    // 각 페이지 생성
     puzzle *puzzlePage = new puzzle;
 
-    // Webcam 화면 (Ui::webcam_capture 대신 클래스 사용)
-    WebcamCapture *webcamPage = new WebcamCapture;
-
-    // 퍼즐 만들기 화면
-    makePuzzleImage *makePuzzlePage = new makePuzzleImage;
-
     // 스택에 추가
-    stacked.addWidget(puzzlePage);      // index 0
-    stacked.addWidget(webcamPage);      // index 1
-    stacked.addWidget(makePuzzlePage);  // index 2
+    stacked.addWidget(puzzlePage);  // index 0
 
+    // 페이지 전환 연결
     QObject::connect(puzzlePage, &puzzle::switchToWebcam, [&]() {
         stacked.setCurrentIndex(1);
     });
 
+    // 초기 화면
     stacked.setCurrentIndex(0);
     stacked.resize(1024, 768);
     stacked.show();
+
 
     return a.exec();
 }

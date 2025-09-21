@@ -6,29 +6,23 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1024</width>
-    <height>768</height>
+    <width>914</width>
+    <height>556</height>
    </rect>
-  </property>
-  <property name="minimumSize">
-   <size>
-    <width>1024</width>
-    <height>768</height>
-   </size>
   </property>
   <property name="windowTitle">
    <string>puzzle</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout_2">
+  <layout class="QHBoxLayout" name="horizontalLayout">
    <item>
-    <layout class="QVBoxLayout" name="verticalLayout" stretch="8,2">
+    <layout class="QVBoxLayout" name="verticalLayout_5" stretch="8,2">
      <property name="spacing">
       <number>0</number>
      </property>
      <item>
-      <layout class="QHBoxLayout" name="horizontalLayout_2">
+      <layout class="QHBoxLayout" name="horizontalLayout_5">
        <item>
-        <spacer name="horizontalSpacer">
+        <spacer name="horizontalSpacer_5">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>
@@ -41,7 +35,7 @@
         </spacer>
        </item>
        <item>
-        <widget class="QLabel" name="title_label">
+        <widget class="QLabel" name="label_4">
          <property name="font">
           <font>
            <pointsize>50</pointsize>
@@ -56,7 +50,7 @@
         </widget>
        </item>
        <item>
-        <spacer name="horizontalSpacer_2">
+        <spacer name="horizontalSpacer_6">
          <property name="orientation">
           <enum>Qt::Horizontal</enum>
          </property>
@@ -71,7 +65,7 @@
       </layout>
      </item>
      <item>
-      <layout class="QHBoxLayout" name="horizontalLayout">
+      <layout class="QHBoxLayout" name="horizontalLayout_6">
        <item>
         <widget class="QPushButton" name="cameraButton">
          <property name="text">
