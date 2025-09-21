@@ -1,22 +1,22 @@
-#ifndef WEBCAM_CAPTURE_H
-#define WEBCAM_CAPTURE_H
+#ifndef WEBCAMCAPTURE_H
+#define WEBCAMCAPTURE_H
 
-#include <QDialog>
+#include <QWidget>
 
-namespace Ui {
-class webcam_capture;
-}
+QT_BEGIN_NAMESPACE
+namespace Ui { class webcam_capture; }
+QT_END_NAMESPACE
 
-class webcam_capture : public QDialog
+class WebcamCapture : public QWidget
 {
     Q_OBJECT
 
 public:
-    explicit webcam_capture(QWidget *parent = nullptr);
-    ~webcam_capture();
+    WebcamCapture(QWidget *parent = nullptr);
+    ~WebcamCapture();
 
 private:
-    Ui::webcam_capture *ui;
+    Ui::webcam_capture *webcam_capture_ui;
 };
 
-#endif // WEBCAM_CAPTURE_H
+#endif // WEBCAMCAPTURE_H
