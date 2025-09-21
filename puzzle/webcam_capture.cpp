@@ -1,14 +1,14 @@
 #include "webcam_capture.h"
 #include "ui_webcam_capture.h"
 
-WebcamCapture::WebcamCapture(QWidget *parent)
-    : QWidget(parent)
-    , webcam_capture_ui(new Ui::webcam_capture)
+webcam_capture::webcam_capture(QWidget *parent) :
+    QDialog(parent),
+    ui(new Ui::webcam_capture)
 {
-    webcam_capture_ui->setupUi(this);
+    ui->setupUi(this);
 }
 
-WebcamCapture::~WebcamCapture()
+webcam_capture::~webcam_capture()
 {
-    delete webcam_capture_ui;
+    delete ui;
 }

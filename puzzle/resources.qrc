@@ -1,0 +1,7 @@
+<RCC>
+    <qresource prefix="/images"/>
+    <qresource prefix="/">
+        <file>images/puzzle_mask2.png</file>
+        <file>images/puzzle_mask.png</file>
+    </qresource>
+</RCC>
