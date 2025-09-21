@@ -15,6 +15,12 @@ public:
     makePuzzleImage(QWidget *parent = nullptr);
     ~makePuzzleImage();
 
+signals:
+    void showPlayPage();
+
+private slots:
+    void on_make_puzzle_btn_clicked();
+
 private:
     Ui::make_puzzle_image *make_puzzle_image_ui;
 };

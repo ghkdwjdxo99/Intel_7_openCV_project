@@ -12,3 +12,9 @@ makePuzzleImage::~makePuzzleImage()
 {
     delete make_puzzle_image_ui;
 }
+
+void makePuzzleImage::on_make_puzzle_btn_clicked()
+{
+    emit showPlayPage();
+}
+

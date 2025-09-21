@@ -18,6 +18,11 @@ public:
 private slots:
     void on_StBT_clicked();
 
+
+signals:
+    void showPuzzle();
+
+
 private:
     Ui::PlayPage *ui;
 };

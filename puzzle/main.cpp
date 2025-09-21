@@ -23,10 +23,14 @@ int main(int argc, char *argv[])
     // 퍼즐 만들기 화면
     makePuzzleImage *makePuzzlePage = new makePuzzleImage;
 
+    // play 화면
+    PlayPage *playPage = new PlayPage;
+
     // 스택에 추가
     stacked.addWidget(puzzlePage);      // index 0
     stacked.addWidget(webcamPage);      // index 1
     stacked.addWidget(makePuzzlePage);  // index 2
+    stacked.addWidget(playPage);        // index 3
 
     QObject::connect(puzzlePage, &puzzle::switchToWebcam, [&](int puzzleType) {
         stacked.setCurrentIndex(1);   // webcamCapture 화면으로 이동
@@ -36,6 +40,14 @@ int main(int argc, char *argv[])
 
     QObject::connect(webcamPage, &WebcamCapture::switchToMakePuzzle, [&]() {
         stacked.setCurrentIndex(2);   // webcamCapture 화면으로 이동
+    });
+
+    QObject::connect(makePuzzlePage, &makePuzzleImage::showPlayPage, [&](){
+        stacked.setCurrentWidget(playPage);
+    });
+
+    QObject::connect(playPage, &PlayPage::showPuzzle, [&](){
+        stacked.setCurrentWidget(puzzlePage);
     });
 
     stacked.setCurrentIndex(0);
