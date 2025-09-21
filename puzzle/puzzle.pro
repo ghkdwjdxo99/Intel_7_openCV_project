@@ -10,15 +10,23 @@ CONFIG += c++11
 
 SOURCES += \
     main.cpp \
-    puzzle.cpp
+    make_puzzle_image.cpp \
+    puzzle.cpp \
+    webcam_capture.cpp
 
 HEADERS += \
-    puzzle.h
+    make_puzzle_image.h \
+    puzzle.h \
+    webcam_capture.h
 
 FORMS += \
-    puzzle.ui
+    make_puzzle_image.ui \
+    puzzle.ui \
+    webcam_capture.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin
 else: unix:!android: target.path = /opt/$${TARGET}/bin
 !isEmpty(target.path): INSTALLS += target
+
+INCLUDEPATH += $$OUT_PWD

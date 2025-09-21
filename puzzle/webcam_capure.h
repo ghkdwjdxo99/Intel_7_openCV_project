@@ -1,0 +1,4 @@
+#ifndef WEBCAM_CAPURE_H
+#define WEBCAM_CAPURE_H
+
+#endif // WEBCAM_CAPURE_H

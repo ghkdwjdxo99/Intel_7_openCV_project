@@ -4,19 +4,20 @@
 
 puzzle::puzzle(QWidget *parent)
     : QWidget(parent)
-    , ui(new Ui::puzzle)
+    , main_ui(new Ui::puzzle)
 {
-    ui->setupUi(this);
+    main_ui->setupUi(this);
 }
 
 puzzle::~puzzle()
 {
-    delete ui;
+    delete main_ui;
 }
 
 void puzzle::on_cameraButton_clicked()
 {
-    QMessageBox::information(this, "Puzzle Game", "📸 사진 촬영 버튼 클릭됨!");
+    // 기존 QMessageBox 대신 화면 전환 시그널 emit
+    emit switchToWebcam();
 }
 
 void puzzle::on_imageButton_clicked()
