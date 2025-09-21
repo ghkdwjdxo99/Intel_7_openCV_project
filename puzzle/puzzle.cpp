@@ -1,6 +1,6 @@
 #include "puzzle.h"
 #include "ui_puzzle.h"
-#include "PuzzleSelectDialog.h"
+#include "puzzleselectdialog.h"
 #include <QMessageBox>
 
 puzzle::puzzle(QWidget *parent)
