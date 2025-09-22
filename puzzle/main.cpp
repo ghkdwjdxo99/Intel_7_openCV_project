@@ -53,7 +53,12 @@ int main(int argc, char *argv[])
         stacked.setCurrentWidget(playPage);
     });
 
+//    QObject::connect(playPage, &PlayPage::showPuzzle, [&](){
+//        stacked.setCurrentWidget(puzzlePage);
+//    });
+
     QObject::connect(playPage, &PlayPage::showPuzzle, [&](){
+//        stacked.setCurrentWidget(puzzlePage);
         stacked.setCurrentWidget(puzzlePage);
     });
 

@@ -41,7 +41,7 @@
           </widget>
          </item>
          <item>
-          <widget class="QPushButton" name="StBT">
+          <widget class="QPushButton" name="StopBT">
            <property name="text">
             <string>포기하기</string>
            </property>

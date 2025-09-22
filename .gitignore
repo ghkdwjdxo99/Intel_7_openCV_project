@@ -70,3 +70,30 @@ qrc_*.cpp
 
 # VSCode
 .vscode/
+
+
+
+# Qt Creator / qmake build directories
+build-*/
+
+# CMake build directories (혹시 쓸 경우)
+cmake-build-*/
+
+# Generated MOC/UIC/RCC files
+*.moc
+moc_*.cpp
+ui_*.h
+qrc_*.cpp
+
+# Object & binary files
+*.o
+*.obj
+*.exe
+*.out
+*.a
+*.so
+*.dll
+
+# User-specific Qt Creator files
+*.pro.user
+*.pro.user.*

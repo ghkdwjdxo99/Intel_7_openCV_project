@@ -16,8 +16,7 @@ public:
     ~PlayPage();
 
 private slots:
-    void on_StBT_clicked();
-
+    void on_StopBT_clicked();
 
 signals:
     void showPuzzle();
