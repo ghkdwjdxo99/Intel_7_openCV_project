@@ -55,6 +55,7 @@ void PuzzleSelectDialog::on_pushButton_clicked()
         dlg.exec();
 
         accept();
+
     }
     else {
         QMessageBox::warning(this, "선택 오류", "퍼즐 종류를 선택하세요!");
