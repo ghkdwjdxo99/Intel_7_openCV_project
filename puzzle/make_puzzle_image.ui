@@ -19,11 +19,7 @@
      <item>
       <layout class="QVBoxLayout" name="capture_image_layout_v">
        <item>
-        <widget class="QLabel" name="capture_image_label">
-         <property name="text">
-          <string>TextLabel</string>
-         </property>
-        </widget>
+        <widget class="QGraphicsView" name="capture_image_graphicsView"/>
        </item>
       </layout>
      </item>

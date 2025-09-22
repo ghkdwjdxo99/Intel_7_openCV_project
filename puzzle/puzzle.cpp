@@ -62,13 +62,21 @@ void puzzle::on_imageButton_clicked()
 
 
 
-// 이 함수는 지정 폴더 안의 파일을 모두 삭제합니다.
+// 이 함수는 지정 폴더 안의 파일을 모두 삭제하고, 파일명을 출력합니다.
 void puzzle::clearFolder(const QString &folderPath)
 {
     QDir dir(folderPath);
     if (!dir.exists()) return;
+
     dir.setFilter(QDir::Files);
-    for (const QString &file : dir.entryList()) {
-        dir.remove(file);
+    QStringList files = dir.entryList();
+
+    for (const QString &file : files) {
+        QString filePath = dir.absoluteFilePath(file);
+        if (dir.remove(file)) {
+            qDebug() << "삭제 성공:" << filePath;
+        } else {
+            qDebug() << "삭제 실패:" << filePath;
+        }
     }
 }
