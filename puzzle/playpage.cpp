@@ -57,6 +57,9 @@ void PlayPage::showEvent(QShowEvent *event)
     elapsedSeconds = 0;
     ui->timerLabel->setText("00:00");
     timer->start(1000);  // 1초마다 updateTime 실행
+
+    hintCount = 3;
+    ui->HintBT->setText("힌트 (3회)");
 }
 
 void PlayPage::updateTime()
@@ -76,6 +79,7 @@ void PlayPage::updateTime()
 void PlayPage::on_SolutionBT_clicked()
 {
    SolutionDialog dlg(this);
+   dlg.setImage("./images/capture_image/puzzle_image.png");  // 이미지 경로 전달
    dlg.exec();
 }
 
