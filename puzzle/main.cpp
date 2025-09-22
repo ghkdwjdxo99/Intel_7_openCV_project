@@ -10,6 +10,8 @@
 #include <QApplication>
 #include <QStackedWidget>
 
+int g_puzzleType = 0;   // 퍼즐 타입 저장
+
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
@@ -40,11 +42,14 @@ int main(int argc, char *argv[])
     stacked.addWidget(makePuzzlePage);  // index 2
     stacked.addWidget(playPage);        // index 3
 
-    QObject::connect(puzzlePage, &puzzle::switchToWebcam, [&](int puzzleType) {
-        stacked.setCurrentIndex(1);   // webcamCapture 화면으로 이동
-
-        // 필요하다면 webcamPage에 선택값 전달하는 로직 추가 가능
+    QObject::connect(puzzlePage, &puzzle::switchToWebcam, [&]() {
+        PuzzleSelectDialog dlg(&stacked);
+        if (dlg.exec() == QDialog::Accepted) {
+            g_puzzleType = dlg.selectedPuzzleType();
+            stacked.setCurrentIndex(1);   // webcam 화면으로 이동
+        }
     });
+
 
     QObject::connect(webcamPage, &WebcamCapture::switchToMakePuzzle, [&]() {
         stacked.setCurrentIndex(2);   // webcamCapture 화면으로 이동
@@ -83,10 +88,9 @@ int main(int argc, char *argv[])
         stacked.setCurrentIndex(0);   // 메인 화면(Page0)으로 전환
     });
 
-
-
-
+    // 4번 창 -> 5번 창
     QObject::connect(makePuzzlePage, &makePuzzleImage::showPlayPage, [&](){
+        playPage->setPuzzleBoard(g_puzzleType);   // 기존 퍼즐 선택값 전달
         stacked.setCurrentWidget(playPage);
     });
 

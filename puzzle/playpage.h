@@ -15,6 +15,7 @@ class PlayPage : public QWidget
 public:
     explicit PlayPage(QWidget *parent = nullptr);
     ~PlayPage();
+    void setPuzzleBoard(int type);  // 퍼즐 보드 설정 함수
 
 protected:
     void showEvent(QShowEvent *event) override;
@@ -22,6 +23,10 @@ protected:
 private slots:
     void on_StopBT_clicked();
     void updateTime();
+
+    void on_SolutionBT_clicked();
+
+    void on_HintBT_clicked();
 
 signals:
     void showPuzzle();
@@ -31,6 +36,7 @@ private:
     Ui::PlayPage *ui;
     QTimer *timer;
     int elapsedSeconds;
+    int hintCount;
 };
 
 #endif // PLAYPAGE_H

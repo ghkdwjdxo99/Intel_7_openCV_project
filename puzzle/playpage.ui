@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>609</width>
-    <height>413</height>
+    <width>833</width>
+    <height>542</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,7 +17,7 @@
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout" stretch="6,4">
      <item>
-      <widget class="QGraphicsView" name="PzBoard"/>
+      <widget class="QGraphicsView" name="PuzzleBoard"/>
      </item>
      <item>
       <layout class="QVBoxLayout" name="verticalLayout" stretch="9,1">
@@ -44,7 +44,7 @@
           </widget>
          </item>
          <item>
-          <widget class="QPushButton" name="SolBT">
+          <widget class="QPushButton" name="SolutionBT">
            <property name="text">
             <string>원본보기</string>
            </property>

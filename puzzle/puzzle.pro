@@ -28,6 +28,7 @@ HEADERS += draggablelistwidget.h \
            playpage.h \
            puzzle.h \
            puzzleselectdialog.h \
+           solutiondialog.h \
            successdialog.h \
            ui_make_puzzle_image.h \
            ui_playpage.h \
@@ -41,6 +42,7 @@ FORMS += make_puzzle_image.ui \
          playpage.ui \
          puzzle.ui \
          puzzleselectdialog.ui \
+         solutiondialog.ui \
          successdialog.ui \
          webcam_capture.ui
 SOURCES += draggablelistwidget.cpp \
@@ -50,6 +52,7 @@ SOURCES += draggablelistwidget.cpp \
            playpage.cpp \
            puzzle.cpp \
            puzzleselectdialog.cpp \
+           solutiondialog.cpp \
            successdialog.cpp \
            webcam_capture.cpp
 RESOURCES += resources.qrc
