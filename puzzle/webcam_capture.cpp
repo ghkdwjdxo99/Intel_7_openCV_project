@@ -54,8 +54,7 @@ void WebcamCapture::on_capture_btn_clicked()
             QDir().mkpath(saveDir);  // 폴더 없으면 생성
 
             // 2. 파일명 (타임스탬프 붙이면 중복 안 됨)
-            QString filename = saveDir + QString("/capture_%1.jpg")
-                .arg(QDateTime::currentDateTime().toString("yyyyMMdd_hhmmss"));
+            QString filename = saveDir + "/capture_image.jpg";
 
             // 3. 저장
             cv::imwrite(filename.toStdString(), frame);
