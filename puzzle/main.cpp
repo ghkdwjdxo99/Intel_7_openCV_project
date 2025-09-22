@@ -1,6 +1,5 @@
 #include "puzzle.h"
-
-#include "webcam_capture.h"   // 클래스 include
+#include "webcam_capture.h"
 #include "make_puzzle_image.h"
 #include "puzzleselectdialog.h"
 #include "playpage.h"
@@ -16,86 +15,62 @@ int main(int argc, char *argv[])
 
     QStackedWidget stacked;
 
-    // Puzzle 화면
+    // 현재 선택된 퍼즐 타입 (기본 5로 초기화)
+    int currentPuzzleType = 5;
+
+    // 페이지들
     puzzle *puzzlePage = new puzzle;
-
-    // Webcam 화면 (Ui::webcam_capture 대신 클래스 사용)
     WebcamCapture *webcamPage = new WebcamCapture;
-
-    // 퍼즐 만들기 화면
     makePuzzleImage *makePuzzlePage = new makePuzzleImage;
-
-    // play 화면
     PlayPage *playPage = new PlayPage;
-
-    // success Dialog
     SuccessDialog *successDlg = new SuccessDialog;
-
-    // fail Dialog
     FailDialog *failDlg = new FailDialog;
 
-    // 스택에 추가
-    stacked.addWidget(puzzlePage);      // index 0
-    stacked.addWidget(webcamPage);      // index 1
-    stacked.addWidget(makePuzzlePage);  // index 2
-    stacked.addWidget(playPage);        // index 3
+    stacked.addWidget(puzzlePage);      // 0
+    stacked.addWidget(webcamPage);      // 1
+    stacked.addWidget(makePuzzlePage);  // 2
+    stacked.addWidget(playPage);        // 3
 
+    // 퍼즐 페이지 -> 웹캠 페이지 (퍼즐 타입 전달받아 저장)
     QObject::connect(puzzlePage, &puzzle::switchToWebcam, [&](int puzzleType) {
-        stacked.setCurrentIndex(1);   // webcamCapture 화면으로 이동
-
-        // 필요하다면 webcamPage에 선택값 전달하는 로직 추가 가능
+        currentPuzzleType = puzzleType;
+        makePuzzlePage->setPuzzleType(puzzleType);  // ★ 타입 먼저 세팅
+        stacked.setCurrentIndex(1);
     });
 
     QObject::connect(webcamPage, &WebcamCapture::switchToMakePuzzle, [&]() {
-        stacked.setCurrentIndex(2);   // webcamCapture 화면으로 이동
+        stacked.setCurrentIndex(2);
+        makePuzzlePage->loadCapturedImage();        // ★ 무인자 호출 유지
     });
 
-    // 퍼즐 종료 시 → 다이얼로그 띄우기
+    // 퍼즐 종료 → 다이얼로그 …
     QObject::connect(playPage, &PlayPage::puzzleFinished,
                      [&](int elapsed, bool success){
         if (success) {
             SuccessDialog dlg(&stacked);
-            dlg.setTime(elapsed);  // ⬅️ 걸린 시간 전달
-
-            // 부모 중심으로 이동 보정 (필요 시)
+            dlg.setTime(elapsed);
             dlg.move(stacked.geometry().center() - dlg.rect().center());
-
             dlg.exec();
         } else {
             FailDialog dlg(&stacked);
-//            SuccessDialog dlg(&stacked);
-            dlg.setTime(elapsed);  // ⬅️ 걸린 시간 전달
-
+            dlg.setTime(elapsed);
             dlg.move(stacked.geometry().center() - dlg.rect().center());
-
             dlg.exec();
         }
-        stacked.setCurrentIndex(0); // 메인으로 복귀
+        stacked.setCurrentIndex(0);
     });
 
-    // successdialog 연결 추가
     QObject::connect(successDlg, &SuccessDialog::backToMain, [&]() {
-        stacked.setCurrentIndex(0);   // 메인 화면(Page0)으로 전환
+        stacked.setCurrentIndex(0);
     });
-
-    // faildialog 연결 추가
     QObject::connect(failDlg, &FailDialog::backToMain, [&]() {
-        stacked.setCurrentIndex(0);   // 메인 화면(Page0)으로 전환
+        stacked.setCurrentIndex(0);
     });
-
-
-
 
     QObject::connect(makePuzzlePage, &makePuzzleImage::showPlayPage, [&](){
         stacked.setCurrentWidget(playPage);
     });
-
-//    QObject::connect(playPage, &PlayPage::showPuzzle, [&](){
-//        stacked.setCurrentWidget(puzzlePage);
-//    });
-
     QObject::connect(playPage, &PlayPage::showPuzzle, [&](){
-//        stacked.setCurrentWidget(puzzlePage);
         stacked.setCurrentWidget(puzzlePage);
     });
 
