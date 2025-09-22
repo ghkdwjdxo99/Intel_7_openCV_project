@@ -2,7 +2,7 @@
 
 #include "webcam_capture.h"   // 클래스 include
 #include "make_puzzle_image.h"
-
+#include "puzzleselectdialog.h"
 #include "playpage.h"
 #include "successdialog.h"
 
@@ -29,8 +29,14 @@ int main(int argc, char *argv[])
     stacked.addWidget(webcamPage);      // index 1
     stacked.addWidget(makePuzzlePage);  // index 2
 
-    QObject::connect(puzzlePage, &puzzle::switchToWebcam, [&]() {
-        stacked.setCurrentIndex(1);
+    QObject::connect(puzzlePage, &puzzle::switchToWebcam, [&](int puzzleType) {
+        stacked.setCurrentIndex(1);   // webcamCapture 화면으로 이동
+
+        // 필요하다면 webcamPage에 선택값 전달하는 로직 추가 가능
+    });
+
+    QObject::connect(webcamPage, &WebcamCapture::switchToMakePuzzle, [&]() {
+        stacked.setCurrentIndex(2);   // webcamCapture 화면으로 이동
     });
 
     // successdialog 연결 추가

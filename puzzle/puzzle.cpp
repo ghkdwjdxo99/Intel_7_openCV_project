@@ -18,17 +18,21 @@ puzzle::~puzzle()
 
 void puzzle::on_cameraButton_clicked()
 {
-    // 다이얼로그 생성
     PuzzleSelectDialog dlg(this);
     if (dlg.exec() == QDialog::Accepted) {
         int type = dlg.selectedPuzzleType();
         qDebug() << "카메라 버튼 → 선택된 퍼즐 타입:" << type;
 
+        emit switchToWebcam(type);   // 선택값 전달
+
+        // 필요하다면 메시지박스 대신 스택 전환만 하도록 수정
+        /*
         if (type == 5) {
             QMessageBox::information(this, "선택 결과", "5x5 퍼즐 선택됨!");
         } else if (type == 8) {
             QMessageBox::information(this, "선택 결과", "8x8 퍼즐 선택됨!");
         }
+        */
     }
 }
 
