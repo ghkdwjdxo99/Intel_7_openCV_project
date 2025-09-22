@@ -24,5 +24,6 @@ private slots:
 
 private:
     Ui::puzzle *ui;
+    void clearFolder(const QString &folderPath); // 여기 추가!
 };
 #endif // PUZZLE_H

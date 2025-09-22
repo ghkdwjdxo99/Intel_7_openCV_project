@@ -10,7 +10,9 @@ CONFIG += c++11
 
 TEMPLATE = app
 TARGET = puzzle
-INCLUDEPATH += .
+#INCLUDEPATH += .
+INCLUDEPATH += /usr/include/opencv4
+LIBS += -lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_videoio -lopencv_imgcodecs
 
 # You can make your code fail to compile if you use deprecated APIs.
 # In order to do so, uncomment the following line.
