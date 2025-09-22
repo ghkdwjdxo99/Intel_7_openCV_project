@@ -9,6 +9,8 @@
 #include <QApplication>
 #include <QStackedWidget>
 
+int g_puzzleType = 0;   // 퍼즐 타입 저장
+
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
@@ -37,6 +39,7 @@ int main(int argc, char *argv[])
         makePuzzlePage->setPuzzleType(puzzleType);  // ★ 타입 먼저 세팅
         stacked.setCurrentIndex(1);
     });
+
 
     QObject::connect(webcamPage, &WebcamCapture::switchToMakePuzzle, [&]() {
         stacked.setCurrentIndex(2);
@@ -68,6 +71,7 @@ int main(int argc, char *argv[])
     });
 
     QObject::connect(makePuzzlePage, &makePuzzleImage::showPlayPage, [&](){
+        playPage->setPuzzleBoard(g_puzzleType);   // 기존 퍼즐 선택값 전달
         stacked.setCurrentWidget(playPage);
     });
     QObject::connect(playPage, &PlayPage::showPuzzle, [&](){

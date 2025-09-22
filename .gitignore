@@ -12,21 +12,38 @@ Thumbs.db
 *.autosave
 
 # -------------------------
-# 빌드 산출물
+# 빌드 산출물 (어느 폴더든 전부 무시)
 # -------------------------
-*.o
-*.so
-*.a
-*.out
-*.exe
+**/*.o
+**/*.obj
+**/*.so
+**/*.a
+**/*.out
+**/*.exe
+**/*.dll
+**/*.bin
+**/*.elf
 
-# 빌드 디렉토리
+# Linux/Qt 실행 파일 (확장자 없는 바이너리)
+puzzle             # 루트 실행 파일
+*/puzzle           # 하위 폴더 실행 파일
+**/puzzle          # 깊은 하위 폴더까지 실행 파일
+
+# -------------------------
+# 빌드 디렉토리 (모든 위치)
+# -------------------------
 /build/
 /bin/
 /lib/
 /obj/
 /out/
+**/build/
+**/bin/
+**/lib/
+**/obj/
+**/out/
 build-puzzle-Desktop-Debug/
+
 # -------------------------
 # CMake / Ninja
 # -------------------------
@@ -71,8 +88,6 @@ qrc_*.cpp
 # VSCode
 .vscode/
 
-
-
 # Qt Creator / qmake build directories
 build-*/
 
@@ -84,16 +99,3 @@ cmake-build-*/
 moc_*.cpp
 ui_*.h
 qrc_*.cpp
-
-# Object & binary files
-*.o
-*.obj
-*.exe
-*.out
-*.a
-*.so
-*.dll
-
-# User-specific Qt Creator files
-*.pro.user
-*.pro.user.*

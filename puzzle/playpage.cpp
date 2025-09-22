@@ -3,11 +3,13 @@
 #include "puzzle.h"
 #include "successdialog.h"
 #include "faildialog.h"
+#include "solutiondialog.h"
 
 #include <QStackedWidget>
 #include <QMetaObject>
 #include <QDebug>
 #include <QTimer>
+#include <QMessageBox>
 
 PlayPage::PlayPage(QWidget *parent) :
     QWidget(parent),
@@ -22,6 +24,10 @@ PlayPage::PlayPage(QWidget *parent) :
 
     // 초기 라벨 값 설정
     ui->timerLabel->setText("00:00");
+
+    // 힌트 횟수 초기화
+    hintCount = 3;
+    ui->HintBT->setText("힌트 (3회)");
 }
 
 PlayPage::~PlayPage()
@@ -66,3 +72,53 @@ void PlayPage::updateTime()
             .arg(seconds, 2, 10, QChar('0'))
     );
 }
+
+void PlayPage::on_SolutionBT_clicked()
+{
+   SolutionDialog dlg(this);
+   dlg.exec();
+}
+
+
+void PlayPage::on_HintBT_clicked()
+{
+    if(hintCount > 0){
+        hintCount--;
+        ui->HintBT->setText(QString("힌트 (%1회)").arg(hintCount));
+
+        // 실제 힌트 기능 실행
+        qDebug() << "힌트 사용! 남은 횟수:" << hintCount;
+    }
+
+    else{
+        QMessageBox::warning(this, "힌트 제한", "더 이상 힌트를 사용할 수 없습니다!!!");
+    }
+}
+
+void PlayPage::setPuzzleBoard(int type)
+{
+    QString imgPath;
+    if (type == 5)
+        imgPath = "./images/puzzle_mask_5x5.png";
+    else if (type == 8)
+        imgPath = "./images/puzzle_mask_8x8.png";
+    else
+        return;
+
+    QPixmap board(imgPath);
+    if (board.isNull()) {
+        qWarning() << "퍼즐 보드 이미지 불러오기 실패:" << imgPath;
+        return;
+    }
+
+    // QGraphicsScene을 만들어서 QGraphicsView에 세팅
+    QGraphicsScene *scene = new QGraphicsScene(this);
+    scene->addPixmap(board.scaled(
+        ui->PuzzleBoard->size(),
+        Qt::KeepAspectRatio,
+        Qt::SmoothTransformation
+    ));
+    ui->PuzzleBoard->setScene(scene);
+}
+
+
