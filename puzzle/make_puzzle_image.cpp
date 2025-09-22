@@ -1,9 +1,13 @@
 #include "make_puzzle_image.h"
 #include "ui_make_puzzle_image.h"
+#include "puzzle_piece_save.h"
 #include <QGraphicsScene>
 #include <QDir>
 #include <QPixmap>
 #include <QDebug>
+
+#include <opencv2/opencv.hpp>
+#include <filesystem>
 
 makePuzzleImage::makePuzzleImage(QWidget *parent)
     : QWidget(parent)
@@ -56,6 +60,62 @@ void makePuzzleImage::on_make_puzzle_btn_clicked()
         qDebug() << "퍼즐 이미지 저장 실패:" << outPath;
     }
 
+    // ⭐ 수정: OpenCV 기반 퍼즐 분할 추가
+    {
+        cv::Mat cvCapture = cv::imread(m_capturePath.toStdString());
+        if (cvCapture.empty()) {
+            qWarning() << "캡처 이미지 OpenCV 로드 실패:" << m_capturePath;
+            return;
+        }
+
+        // 드래그된 마스크 위치
+        QRectF maskRect = m_maskItem->sceneBoundingRect();
+        cv::Rect roi(maskRect.x(), maskRect.y(), maskRect.width(), maskRect.height());
+
+        roi.x = std::max(0, roi.x);
+        roi.y = std::max(0, roi.y);
+        roi.width  = std::min(roi.width,  cvCapture.cols - roi.x);
+        roi.height = std::min(roi.height, cvCapture.rows - roi.y);
+        if (roi.width <= 0 || roi.height <= 0) {
+            qWarning() << "ROI 유효 크기 없음!";
+            return;
+        }
+
+        cv::Mat roiImg = cvCapture(roi).clone();
+
+        // 퍼즐 마스크 로드
+        cv::Mat mask;
+        if (m_puzzleType == 5)
+            mask = cv::imread("./images/puzzle_mask_5x5.png", cv::IMREAD_GRAYSCALE);
+        else
+            mask = cv::imread("./images/puzzle_mask_8x8.png", cv::IMREAD_GRAYSCALE);
+
+        if (mask.empty()) {
+            qWarning() << "퍼즐 마스크 OpenCV 로드 실패!";
+            return;
+        }
+
+        // ROI 크기에 맞게 마스크 리사이즈
+        cv::Mat maskResized;
+        cv::resize(mask, maskResized, roiImg.size());
+
+        // ⭐ 여기서 puzzle_piece_save.cpp에 있던 makePuzzlePieces() 사용
+        auto pieces = puzzle_piece_save::makePuzzlePieces(roiImg, maskResized);
+
+        // 저장 경로 정리
+        std::filesystem::remove_all("./images/piece_image/");
+        std::filesystem::create_directories("./images/piece_image/");
+
+        // 퍼즐 조각 저장 (pieces[i].img는 이미 RGBA)
+        for (size_t i = 0; i < pieces.size(); ++i) {
+            std::string pieceName = "./images/piece_image/piece_" + std::to_string(i) + ".png";
+            cv::imwrite(pieceName, pieces[i].img);   // ← 그대로 저장하면 투명 배경 유지
+        }
+
+        qDebug() << "퍼즐 조각 저장 완료!";
+    }
+    // ⭐ 수정 끝
+
     // 기존 동작 유지(필요 시 페이지 전환)
     emit showPlayPage();
 }
@@ -73,6 +133,7 @@ void makePuzzleImage::loadCapturedImage()
     // 1) 배경
     const QString imgPath = QCoreApplication::applicationDirPath()
                           + "/images/capture_image/capture_image.jpg";
+    m_capturePath = imgPath;   // 캡처 경로를 멤버에 저장
     QPixmap captured(imgPath);
     if (captured.isNull()) { qDebug() << "배경 이미지 로드 실패:" << imgPath; return; }
 
