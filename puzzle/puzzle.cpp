@@ -3,6 +3,8 @@
 #include "puzzleselectdialog.h"
 #include <QMessageBox>
 #include <QDebug>
+#include <QDir>
+
 
 puzzle::puzzle(QWidget *parent)
     : QWidget(parent)
@@ -22,6 +24,8 @@ void puzzle::on_cameraButton_clicked()
     if (dlg.exec() == QDialog::Accepted) {
         int type = dlg.selectedPuzzleType();
         qDebug() << "카메라 버튼 → 선택된 퍼즐 타입:" << type;
+        clearFolder("../puzzle/images/chapture_image");
+        clearFolder("../puzzle/images/piece_image");
 
         emit switchToWebcam(type);   // 선택값 전달
 
@@ -39,6 +43,9 @@ void puzzle::on_cameraButton_clicked()
 
 void puzzle::on_imageButton_clicked()
 {
+    clearFolder("../puzzle/images/chapture_image");
+    clearFolder("../puzzle/images/piece_image");
+
     PuzzleSelectDialog dlg(this);
     if (dlg.exec() == QDialog::Accepted) {
         int type = dlg.selectedPuzzleType();
@@ -53,3 +60,15 @@ void puzzle::on_imageButton_clicked()
 
 }
 
+
+
+// 이 함수는 지정 폴더 안의 파일을 모두 삭제합니다.
+void puzzle::clearFolder(const QString &folderPath)
+{
+    QDir dir(folderPath);
+    if (!dir.exists()) return;
+    dir.setFilter(QDir::Files);
+    for (const QString &file : dir.entryList()) {
+        dir.remove(file);
+    }
+}
