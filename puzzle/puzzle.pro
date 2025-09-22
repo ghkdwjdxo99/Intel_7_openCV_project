@@ -23,6 +23,7 @@ LIBS += -lopencv_core -lopencv_imgproc -lopencv_highgui -lopencv_videoio -lopenc
 
 # Input
 HEADERS += draggablelistwidget.h \
+           faildialog.h \
            make_puzzle_image.h \
            playpage.h \
            puzzle.h \
@@ -36,12 +37,14 @@ HEADERS += draggablelistwidget.h \
            ui_webcamcapture.h \
            webcam_capture.h
 FORMS += make_puzzle_image.ui \
+         faildialog.ui \
          playpage.ui \
          puzzle.ui \
          puzzleselectdialog.ui \
          successdialog.ui \
          webcam_capture.ui
 SOURCES += draggablelistwidget.cpp \
+           faildialog.cpp \
            main.cpp \
            make_puzzle_image.cpp \
            playpage.cpp \

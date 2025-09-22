@@ -13,19 +13,29 @@
   <property name="windowTitle">
    <string>Form</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout_3">
+  <layout class="QHBoxLayout" name="horizontalLayout_2">
    <item>
     <layout class="QHBoxLayout" name="horizontalLayout" stretch="6,4">
      <item>
       <widget class="QGraphicsView" name="PzBoard"/>
      </item>
      <item>
-      <layout class="QVBoxLayout" name="verticalLayout">
+      <layout class="QVBoxLayout" name="verticalLayout" stretch="9,1">
        <item>
         <widget class="DraggableListWidget" name="PieceBoard"/>
        </item>
        <item>
         <layout class="QVBoxLayout" name="verticalLayout_2">
+         <item>
+          <widget class="QLabel" name="timerLabel">
+           <property name="text">
+            <string>00:00</string>
+           </property>
+           <property name="alignment">
+            <set>Qt::AlignCenter</set>
+           </property>
+          </widget>
+         </item>
          <item>
           <widget class="QPushButton" name="HintBT">
            <property name="text">
