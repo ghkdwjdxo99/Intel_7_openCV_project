@@ -90,6 +90,8 @@ private:
     QGraphicsScene*        m_scene   {nullptr};
     QGraphicsPixmapItem*   m_bgItem  {nullptr};
     DraggablePixmapItem*   m_maskItem{nullptr};
+
+    QString m_capturePath;   // 캡처 이미지 경로 저장용 (추가)
 };
 
 #endif // MAKEPUZZLEIMAGE_H
