@@ -45,7 +45,7 @@
             <string/>
            </property>
            <property name="pixmap">
-            <pixmap resource="resources.qrc">:/images/puzzle_mask.png</pixmap>
+            <pixmap resource="resources.qrc">:/images/puzzle_mask_5x5.png</pixmap>
            </property>
            <property name="scaledContents">
             <bool>true</bool>
@@ -78,7 +78,7 @@
             <string/>
            </property>
            <property name="pixmap">
-            <pixmap resource="resources.qrc">:/images/puzzle_mask2.png</pixmap>
+            <pixmap resource="resources.qrc">:/images/puzzle_mask_8x8.png</pixmap>
            </property>
            <property name="scaledContents">
             <bool>true</bool>

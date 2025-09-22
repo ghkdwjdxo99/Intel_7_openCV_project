@@ -1,19 +1,19 @@
-#ifndef SUCCESSDIALOG_H
-#define SUCCESSDIALOG_H
+#ifndef FAILDIALOG_H
+#define FAILDIALOG_H
 
 #include <QDialog>
 
 namespace Ui {
-class SuccessDialog;
+class FailDialog;
 }
 
-class SuccessDialog : public QDialog
+class FailDialog : public QDialog
 {
     Q_OBJECT
 
 public:
-    explicit SuccessDialog(QWidget *parent = nullptr);
-    ~SuccessDialog();
+    explicit FailDialog(QWidget *parent = nullptr);
+    ~FailDialog();
     void setTime(int seconds);  // 시간 전달 함수
 
 signals:
@@ -23,7 +23,7 @@ private slots:
     void on_mainButton_clicked();
 
 private:
-    Ui::SuccessDialog *ui;
+    Ui::FailDialog *ui;
 };
 
-#endif // SUCCESSDIALOG_H
+#endif // FAILDIALOG_H

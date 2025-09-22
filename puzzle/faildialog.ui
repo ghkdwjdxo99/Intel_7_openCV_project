@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>SuccessDialog</class>
- <widget class="QDialog" name="SuccessDialog">
+ <class>FailDialog</class>
+ <widget class="QDialog" name="FailDialog">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>614</width>
-    <height>412</height>
+    <width>563</width>
+    <height>380</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -32,7 +32,7 @@
           </font>
          </property>
          <property name="text">
-          <string>성공했습니다 🎉</string>
+          <string>포기하셨습니다..😢</string>
          </property>
          <property name="alignment">
           <set>Qt::AlignCenter</set>

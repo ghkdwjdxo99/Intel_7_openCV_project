@@ -1,25 +1,25 @@
-#include "successdialog.h"
-#include "ui_successdialog.h"
+#include "faildialog.h"
+#include "ui_faildialog.h"
 
-SuccessDialog::SuccessDialog(QWidget *parent) :
+FailDialog::FailDialog(QWidget *parent) :
     QDialog(parent),
-    ui(new Ui::SuccessDialog)
+    ui(new Ui::FailDialog)
 {
     ui->setupUi(this);
 }
 
-SuccessDialog::~SuccessDialog()
+FailDialog::~FailDialog()
 {
     delete ui;
 }
 
-void SuccessDialog::on_mainButton_clicked()
+void FailDialog::on_mainButton_clicked()
 {
     emit backToMain();  // 신호 발생
     accept();           // 다이얼로그 닫기
 }
 
-void SuccessDialog::setTime(int seconds)
+void FailDialog::setTime(int seconds)
 {
     int minutes = seconds / 60;
     int sec = seconds % 60;
