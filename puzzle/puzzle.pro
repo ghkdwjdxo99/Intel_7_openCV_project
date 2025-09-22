@@ -28,6 +28,8 @@ HEADERS += draggablelistwidget.h \
            make_puzzle_image.h \
            playpage.h \
            puzzle.h \
+           puzzleboard.h \
+           puzzlepiece.h \
            puzzleselectdialog.h \
            solutiondialog.h \
            successdialog.h \
@@ -53,6 +55,8 @@ SOURCES += draggablelistwidget.cpp \
            make_puzzle_image.cpp \
            playpage.cpp \
            puzzle.cpp \
+           puzzleboard.cpp \
+           puzzlepiece.cpp \
            puzzleselectdialog.cpp \
            solutiondialog.cpp \
            successdialog.cpp \
