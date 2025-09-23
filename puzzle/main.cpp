@@ -14,10 +14,26 @@
 #include <QFile>
 #include <QFontDatabase>
 
+#include <QFileDialog>    // [ADDED]
+#include <QDir>           // [ADDED]
+#include <QMessageBox>    // [ADDED]
+#include <QCoreApplication> // [ADDED]
+
 #define QT_DEBUG
 
 int g_puzzleType = 0;   // 퍼즐 타입 저장
 
+// (선택) 복사 유틸 - 캡처 저장 경로로 강제 복사
+static bool copyToCaptureJpg(const QString& src, QString* outDst = nullptr)  // [ADDED]
+{
+    const QString capDir = QCoreApplication::applicationDirPath() + "/images/capture_image"; // [ADDED]
+    QDir().mkpath(capDir);                                                                     // [ADDED]
+    const QString dst = capDir + "/capture_image.jpg";                                         // [ADDED]
+    if (QFile::exists(dst)) QFile::remove(dst);                                                // [ADDED]
+    if (!QFile::copy(src, dst)) return false;                                                  // [ADDED]
+    if (outDst) *outDst = dst;                                                                 // [ADDED]
+    return true;                                                                               // [ADDED]
+}
 
 static void loadStyle() {
     QFontDatabase::addApplicationFont(":/fonts/NotoSansKR-Regular.otf");
@@ -96,6 +112,39 @@ int main(int argc, char *argv[])
     QObject::connect(playPage, &PlayPage::showPuzzle, [&](){
         stacked.setCurrentWidget(puzzlePage);
     });
+
+    // ① 메인창 "이미지 불러오기" → (여기서) 파일선택/복사 → 위치조절창 전환
+    QObject::connect(puzzlePage, &puzzle::imageImportRequested,    // [ADDED]
+                     [&](int type){                                // [ADDED]
+        // 2) 파일 열기
+        const QString src = QFileDialog::getOpenFileName(
+            &stacked,
+            QObject::tr("이미지 선택"),
+            QDir::homePath(),
+            QObject::tr("Images (*.png *.jpg *.jpeg *.bmp)"));     // [ADDED]
+
+        if (src.isEmpty()) return;                                 // [ADDED]
+
+        // 3) 지정 경로로 복사: ./images/capture_image/capture_image.jpg
+        QString dst;                                               // [ADDED]
+        if (!copyToCaptureJpg(src, &dst)) {                        // [ADDED]
+            QMessageBox::warning(&stacked, QObject::tr("오류"),
+                                 QObject::tr("이미지 복사 실패"));  // [ADDED]
+            return;                                                // [ADDED]
+        }
+
+        // 4) 퍼즐 위치 조절 페이지 세팅
+        //    - 퍼즐 타입 전달 (이미 구현돼있다고 했으므로 그대로 사용)
+        makePuzzlePage->setPuzzleType(type);                       // [ADDED] 5 또는 8
+
+        //    - 배경 이미지 로드(기존 로더 호출) : 너희 코드에 이미 있는 함수 호출
+        //      예) loadCapturedImage()가 capture_image.jpg를 읽어들이도록 구현되어 있음
+        makePuzzlePage->loadCapturedImage();                       // [ADDED] (기존 함수명 그대로 사용)
+
+        // 5) 전환
+        stacked.setCurrentWidget(makePuzzlePage);                  // [ADDED]
+    });
+
 
     stacked.setCurrentIndex(0);
     stacked.resize(1024, 768);
