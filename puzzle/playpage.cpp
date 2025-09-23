@@ -23,6 +23,10 @@
 #include <QSet>
 #include <QFont>
 #include <QBrush>
+#include <QGraphicsOpacityEffect>
+#include <QPropertyAnimation>
+#include <QEasingCurve>
+#include <QAbstractAnimation>
 
 // -------------------------
 // 파일명에서 숫자(id) 추출
@@ -246,30 +250,19 @@ void PlayPage::loadPiecesFromDir(const QString &dirPath)
         const QString fn   = files[i];
         const QString path = dir.absoluteFilePath(fn);
 
-//        QPixmap px(path);
-//        if (px.isNull()) { qWarning() << "조각 로드 실패:" << path; continue; }
-
-//        // 셀 안에 들어오도록 스케일
-//        QPixmap scaled = px.scaled(mCellSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-
-//        // 무작위 배치 위치 계산
-//        qreal minX=mRandomArea.left(), maxX=mRandomArea.right()-scaled.width();
         QPixmap px(path);
         if (px.isNull()) { qWarning() << "조각 로드 실패:" << path; continue; }
 
         // [SIZE] 퍼즐 조각 확대 계수 (필요에 따라 1.10~1.50 등으로 조절)
-        const qreal factor = 1.25; // 25% 크게
+        const qreal factor = 1.35; // 우선 셀과 동일 크기
         const QSize targetSize(
             qRound(mCellSize.width()  * factor),
             qRound(mCellSize.height() * factor)
         );
-
-        // 셀 비율을 유지하면서 targetSize 기준으로 스케일
         QPixmap scaled = px.scaled(targetSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
 
         // 무작위 배치 위치 계산
         qreal minX=mRandomArea.left(), maxX=mRandomArea.right()-scaled.width();
-/////////////
         qreal minY=mRandomArea.top(),  maxY=mRandomArea.bottom()-scaled.height();
         if (maxX<minX) maxX=minX;
         if (maxY<minY) maxY=minY;
@@ -289,12 +282,33 @@ void PlayPage::loadPiecesFromDir(const QString &dirPath)
         item->setData(0, parsedId);   // ★ 정답 슬롯 id
         item->setData(1, -1);         // 현재 슬롯 기록
 
+        // --- 앵커 파싱: _ax{X}_ay{Y}
+        QRegularExpression re_ax("_ax(-?\\d+)");
+        QRegularExpression re_ay("_ay(-?\\d+)\\.");
+        int ax = -1, ay = -1;
+        auto mx = re_ax.match(fn);
+        auto my = re_ay.match(fn);
+        if (mx.hasMatch()) ax = mx.captured(1).toInt();
+        if (my.hasMatch()) ay = my.captured(1).toInt();
+
+        // 스케일 보정: px → scaled 로 크기가 변했으므로 앵커도 동일 배율 적용
+        const qreal sx = scaled.width()  / static_cast<qreal>(px.width());
+        const qreal sy = scaled.height() / static_cast<qreal>(px.height());
+        QPointF anchorScaled(
+            (ax >= 0 ? ax * sx : scaled.width()  / 2.0),
+            (ay >= 0 ? ay * sy : scaled.height() / 2.0)
+        );
+
+        // data(2)에 로컬좌표계 앵커 저장
+        item->setData(2, anchorScaled);
+
         // 디버그 로그
         qDebug().nospace()
           << "[PieceLoad] file=" << fn
           << " parsedId=" << parsedId
           << " scaled=" << scaled.width() << "x" << scaled.height()
-          << " cell=" << mCellSize.width() << "x" << mCellSize.height();
+          << " cell=" << mCellSize.width() << "x" << mCellSize.height()
+          << " anchor=(" << anchorScaled.x() << "," << anchorScaled.y() << ")";
 
         // 조각 id 시각화(빨간색): 슬롯 번호(파랑)와 눈으로 대조 가능
         auto *tag = mScene->addSimpleText(QString::number(parsedId), QFont("Noto Sans KR", 9));
@@ -340,7 +354,10 @@ void PlayPage::placePieceAtSlot(QGraphicsPixmapItem* piece, int slotIndex)
 
     // 새 슬롯으로 스냅
     const QPointF targetCenter = mSlotCenters[slotIndex];
-    piece->setPos(targetCenter - piece->boundingRect().center());
+    QVariant v = piece->data(2);
+    QPointF anchorLocal = v.isValid() ? v.toPointF()
+                                      : piece->boundingRect().center(); // fallback
+    piece->setPos(targetCenter - anchorLocal);
     piece->setFlag(QGraphicsItem::ItemIsMovable, false);
     piece->setFlag(QGraphicsItem::ItemIsSelectable, false);
     piece->setZValue(1);
@@ -367,23 +384,68 @@ void PlayPage::trySnap(QGraphicsPixmapItem *piece, double tolerance)
         return;
 
     const QPointF targetCenter = mSlotCenters[id];
-    const QPointF pieceCenter  = piece->sceneBoundingRect().center();
-    const qreal   dist         = QLineF(pieceCenter, targetCenter).length();
+
+    // 로컬 앵커 → 씬 좌표로 변환
+    QVariant v = piece->data(2);
+    QPointF anchorLocal = v.isValid() ? v.toPointF()
+                                      : piece->boundingRect().center(); // fallback
+    QPointF anchorScene = piece->mapToScene(anchorLocal);
+
+    // 앵커 기준 거리
+    const qreal dist = QLineF(anchorScene, targetCenter).length();
 
     qDebug().nospace()
       << "[SnapTry] id=" << id
       << " dist=" << dist
       << " tol=" << tolerance
-      << " pieceCenter=(" << pieceCenter.x() << "," << pieceCenter.y() << ")"
+      << " anchorScene=(" << anchorScene.x() << "," << anchorScene.y() << ")"
       << " target=(" << targetCenter.x() << "," << targetCenter.y() << ")"
       << " pieceSize=" << piece->boundingRect().width() << "x" << piece->boundingRect().height() << ")";
 
     if (dist <= tolerance) {
         placePieceAtSlot(piece, id);
         qDebug() << "[SnapOK] id=" << id;
+
+        // ─────────────────────────────
+        // ✅ 모든 조각이 제자리에 있으면 즉시 최종 이미지로 교체
+        //    (중복 실행 방지를 위해 동적 프로퍼티 'finished' 사용)
+        bool complete = true;
+        for (int i = 0; i < mOccupant.size(); ++i) {
+            if (!mOccupant[i] || mOccupant[i]->data(0).toInt() != i) { complete = false; break; }
+        }
+        if (complete && !this->property("finished").toBool()) {
+            this->setProperty("finished", true);
+
+            // 더 이상 스냅/이벤트 안 받도록 약간 정리
+            if (timer) timer->stop();
+            if (mScene) mScene->removeEventFilter(this);
+
+            // 장면 내용 정리 후 최종 이미지 표시
+            mScene->clear();
+
+            const QString finalPath =
+                QCoreApplication::applicationDirPath() + "/images/capture_image/puzzle_image.png";
+            QPixmap finalPx(finalPath);
+
+            if (!finalPx.isNull()) {
+                const QSize boardSize(mCols * mCellSize.width(),
+                                      mRows * mCellSize.height());
+                QPixmap scaled = finalPx.scaled(boardSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+                auto *pix = mScene->addPixmap(scaled);
+                pix->setZValue(0);
+                pix->setPos(mTopLeft);
+            } else {
+                qWarning() << "[Finalize] final image load failed:" << finalPath;
+            }
+
+            // 필요하면 성공 다이얼로그/시그널
+             emit puzzleFinished(elapsedSeconds, true);
+        }
+        // ─────────────────────────────
     } else {
         qDebug() << "[SnapNG] id=" << id;
     }
+
 }
 
 // 마우스 릴리즈 시 스냅 시도

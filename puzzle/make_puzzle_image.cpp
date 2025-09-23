@@ -12,6 +12,31 @@
 #include <vector>
 #include <algorithm>
 
+// ------------------------------------------------------------
+// (헬퍼) 조각의 알파 채널로 가장자리 접촉(돌기) 여부 판정
+//  - left/right/top/bottom 중 어디가 이미지 바깥 끝에 닿아있는지 검사
+//  - 양옆(L&R) 또는 상하(T&B) 모두 true면 "양쪽/상하 돌기"로 보며 더 크게 스케일
+// ------------------------------------------------------------
+static inline void detectEdgeTouches(const cv::Mat& bgra,
+                                     bool& left, bool& right,
+                                     bool& top,  bool& bottom)
+{
+    left = right = top = bottom = false;
+    if (bgra.empty() || bgra.channels() != 4) return;
+
+    std::vector<cv::Mat> ch; cv::split(bgra, ch); // ch[3] = alpha
+    const cv::Mat& A = ch[3];
+
+    const int w = A.cols, h = A.rows;
+    const int mw = std::max(1, w / 25);  // 대략 4% 폭
+    const int mh = std::max(1, h / 25);  // 대략 4% 높이
+
+    if (cv::countNonZero(A(cv::Rect(0,        0, mw, h))) > 0) left   = true;
+    if (cv::countNonZero(A(cv::Rect(w - mw,   0, mw, h))) > 0) right  = true;
+    if (cv::countNonZero(A(cv::Rect(0,        0, w,  mh))) > 0) top    = true;
+    if (cv::countNonZero(A(cv::Rect(0,  h - mh, w,  mh))) > 0) bottom = true;
+}
+
 makePuzzleImage::makePuzzleImage(QWidget *parent)
     : QWidget(parent)
     , make_puzzle_image_ui(new Ui::make_puzzle_image)
@@ -140,7 +165,7 @@ void makePuzzleImage::on_make_puzzle_btn_clicked()
         for (int rad = 0; rad <= std::max(rows, cols); ++rad) {
             for (int dr = -rad; dr <= rad; ++dr) {
                 for (int dc = -rad; dc <= rad; ++dc) {
-                    if (std::abs(dr) != rad && std::abs(dc) != rad) continue; // 테두리만 돌기
+                    if (std::abs(dr) != rad && std::abs(dc) != rad) continue; // 테두리만
                     int rr = r + dr, cc = c + dc;
                     if (rr < 0 || rr >= rows || cc < 0 || cc >= cols) continue;
                     int cand = rr * cols + cc;
@@ -153,52 +178,76 @@ void makePuzzleImage::on_make_puzzle_btn_clicked()
         return -1;
     };
 
+    // =========================
+    // ⭐ r*cols + c 규칙 + 앵커 저장 + "조각별 배율(fx)" 태깅
+    // =========================
     int savedCount = 0;
     for (size_t i = 0; i < pieces.size(); ++i) {
         const auto& P = pieces[i];
         if (P.img.empty() || P.mask.empty()) continue;
 
-        // 조각 무게중심(ROI 좌표계)
+        // 1) 어느 셀인가 (r,c)
         const cv::Moments mu = cv::moments(P.mask, true);
         if (mu.m00 <= 1e-6) continue;
-        const double cxLocal = mu.m10 / mu.m00;
+        const double cxLocal = mu.m10 / mu.m00;   // 조각 로컬
         const double cyLocal = mu.m01 / mu.m00;
 
-        // roi 기준 절대좌표 (P.pos는 조각의 ROI-내 좌상단)
-        const double cx = P.pos.x + cxLocal;
+        const double cx = P.pos.x + cxLocal;      // ROI 절대
         const double cy = P.pos.y + cyLocal;
 
-        // 격자 좌표(r, c)
         int c = static_cast<int>(cx / cellW);
         int r = static_cast<int>(cy / cellH);
         c = std::clamp(c, 0, cols - 1);
         r = std::clamp(r, 0, rows - 1);
 
         int id = r * cols + c;
-
-        // 경계/중복 보정
-        if (id < 0 || id >= rows * cols || used[id]) {
+        if (id < 0 || id >= rows*cols || used[id]) {
             const int fb = findNearestFreeId(r, c);
             if (fb >= 0) id = fb;
         }
-        if (id < 0 || id >= rows * cols) {
+        if (id < 0 || id >= rows*cols) {
             qWarning("skip piece: cannot assign id (r=%d c=%d)", r, c);
             continue;
         }
-
         used[id] = true;
 
-        // RGBA 그대로 저장
-        const std::string outPath = pieceDir + "/piece_" + std::to_string(id) + ".png";
+        // 2) "셀 중심" (원본 ROI 좌표)
+        const double cellCenterX = (c + 0.5) * cellW;
+        const double cellCenterY = (r + 0.5) * cellH;
+
+        // 3) 앵커(셀 중심을 조각 로컬로 투영): anchor = cellCenter - pieceTopLeft
+        //    pieceTopLeft = P.pos (ROI 내 좌상단)
+        const double anchorX = cellCenterX - P.pos.x;
+        const double anchorY = cellCenterY - P.pos.y;
+        const int ax = static_cast<int>(std::round(anchorX));
+        const int ay = static_cast<int>(std::round(anchorY));
+
+        // 4) 돌기 분류 → 조각별 배율 결정
+        bool L=false, R=false, T=false, B=false;
+        detectEdgeTouches(P.img, L, R, T, B);
+        double fx = 1.00;                       // 기본(한쪽만 돌기 등)
+        if ((L && R) || (T && B)) fx = 1.35;    // 양옆 또는 상하 돌기 → 더 크게 (튜닝 가능)
+
+        const int fxInt = static_cast<int>(std::round(fx * 100.0)); // 125 등
+
+        // 5) 파일명: id + anchor + factor
+        const std::string outPath = pieceDir + "/piece_" + std::to_string(id)
+                                  + "_ax" + std::to_string(ax)
+                                  + "_ay" + std::to_string(ay)
+                                  + "_fx" + std::to_string(fxInt)
+                                  + ".png";
+
         if (!cv::imwrite(outPath, P.img)) {
             qWarning("imwrite failed: %s", outPath.c_str());
         } else {
             ++savedCount;
-            qDebug("[PieceSave] id=%d r=%d c=%d  centroid=(%.1f,%.1f)  path=%s",
-                   id, r, c, cx, cy, outPath.c_str());
+            qDebug("[PieceSave] id=%d r=%d c=%d  anchor=(%d,%d)  fx=%d  path=%s",
+                   id, r, c, ax, ay, fxInt, outPath.c_str());
         }
     }
-    qDebug("[PieceSave] total saved: %d (rows=%d cols=%d)", savedCount, rows, cols);
+
+    qDebug("[PieceSave] total saved: %d (rows=%d cols=%d, cell=%dx%d)",
+           savedCount, rows, cols, (int)std::round(cellW), (int)std::round(cellH));
 
     // PlayPage에서 연결되어 있을 piecesReady() 알림
     emit piecesReady();
