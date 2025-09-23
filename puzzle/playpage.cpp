@@ -20,6 +20,18 @@
 #include <QLineF>
 #include <limits>
 #include <QDateTime>
+#include <QSet>
+#include <QFont>
+#include <QBrush>
+
+// -------------------------
+// 파일명에서 숫자(id) 추출
+// -------------------------
+static int parseIdFromFileName(const QString& name) {
+    QRegularExpression re("(\\d+)");
+    auto m = re.match(name);
+    return m.hasMatch() ? m.captured(1).toInt() : -1;
+}
 
 PlayPage::PlayPage(QWidget *parent) :
     QWidget(parent),
@@ -69,7 +81,7 @@ void PlayPage::showEvent(QShowEvent *event)
     timer->start(1000);
 
     hintCount = 3;
-    ui->HintBT->setText("힌트 (3회)");
+    ui->HintBT->setText(QString("힌트 (%1회)").arg(hintCount));
 
     // 방금 저장된 조각 수로 퍼즐 타입 자동 판단
     const QString pieceDir = QCoreApplication::applicationDirPath() + "/images/piece_image";
@@ -184,6 +196,14 @@ void PlayPage::setPuzzleBoard(int type)
     mRandomArea = QRectF(frame.right()+40, frame.top(),
                          1280-(frame.right()+40)-40, frame.height());
 
+    // ▼ 슬롯 인덱스(파란색) 시각화: 조각 id와 대조용
+    for (int i = 0; i < mSlotCenters.size(); ++i) {
+        auto *txt = mScene->addSimpleText(QString::number(i), QFont("Noto Sans KR", 10));
+        txt->setPos(mSlotCenters[i] - QPointF(6, 10)); // 약간 위로
+        txt->setZValue(1000);
+        txt->setBrush(QBrush(Qt::blue));
+    }
+
     // 조각 로드
     QString piecesDir = QCoreApplication::applicationDirPath() + "/images/piece_image";
     loadPiecesFromDir(piecesDir);
@@ -208,17 +228,48 @@ void PlayPage::loadPiecesFromDir(const QString &dirPath)
     int need = mRows*mCols;
     files = files.mid(0, qMin(need, files.size()));
 
+    // 결측/중복 간단 점검
+    {
+        QSet<int> ids;
+        for (const auto& fn : files) {
+            int id = parseIdFromFileName(fn);
+            if (id >= 0) ids.insert(id);
+        }
+        for (int i = 0; i < need; ++i) {
+            if (!ids.contains(i))
+                qWarning() << "[Check] missing piece id:" << i;
+        }
+    }
+
     auto *rng = QRandomGenerator::global();
     for (int i = 0; i < files.size(); ++i) {
         const QString fn   = files[i];
         const QString path = dir.absoluteFilePath(fn);
+
+//        QPixmap px(path);
+//        if (px.isNull()) { qWarning() << "조각 로드 실패:" << path; continue; }
+
+//        // 셀 안에 들어오도록 스케일
+//        QPixmap scaled = px.scaled(mCellSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+
+//        // 무작위 배치 위치 계산
+//        qreal minX=mRandomArea.left(), maxX=mRandomArea.right()-scaled.width();
         QPixmap px(path);
         if (px.isNull()) { qWarning() << "조각 로드 실패:" << path; continue; }
 
-        QPixmap scaled = px.scaled(mCellSize, Qt::KeepAspectRatioByExpanding,
-                                   Qt::SmoothTransformation);
+        // [SIZE] 퍼즐 조각 확대 계수 (필요에 따라 1.10~1.50 등으로 조절)
+        const qreal factor = 1.25; // 25% 크게
+        const QSize targetSize(
+            qRound(mCellSize.width()  * factor),
+            qRound(mCellSize.height() * factor)
+        );
 
+        // 셀 비율을 유지하면서 targetSize 기준으로 스케일
+        QPixmap scaled = px.scaled(targetSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+
+        // 무작위 배치 위치 계산
         qreal minX=mRandomArea.left(), maxX=mRandomArea.right()-scaled.width();
+/////////////
         qreal minY=mRandomArea.top(),  maxY=mRandomArea.bottom()-scaled.height();
         if (maxX<minX) maxX=minX;
         if (maxY<minY) maxY=minY;
@@ -226,14 +277,31 @@ void PlayPage::loadPiecesFromDir(const QString &dirPath)
         qreal rx = minX+(maxX-minX)*rng->generateDouble();
         qreal ry = minY+(maxY-minY)*rng->generateDouble();
 
+        // 조각 아이템 생성
         auto *item = mScene->addPixmap(scaled);
         item->setPos(rx, ry);
         item->setFlag(QGraphicsItem::ItemIsMovable,true);
         item->setFlag(QGraphicsItem::ItemIsSelectable,true);
         item->setZValue(10);
 
-        item->setData(0, i);   // 정답 슬롯 id
-        item->setData(1, -1);  // 현재 슬롯 기록
+        // 파일명에서 정답 슬롯 id 파싱
+        int parsedId = parseIdFromFileName(fn);
+        item->setData(0, parsedId);   // ★ 정답 슬롯 id
+        item->setData(1, -1);         // 현재 슬롯 기록
+
+        // 디버그 로그
+        qDebug().nospace()
+          << "[PieceLoad] file=" << fn
+          << " parsedId=" << parsedId
+          << " scaled=" << scaled.width() << "x" << scaled.height()
+          << " cell=" << mCellSize.width() << "x" << mCellSize.height();
+
+        // 조각 id 시각화(빨간색): 슬롯 번호(파랑)와 눈으로 대조 가능
+        auto *tag = mScene->addSimpleText(QString::number(parsedId), QFont("Noto Sans KR", 9));
+        tag->setBrush(Qt::red);
+        tag->setZValue(item->zValue()+1);
+        tag->setParentItem(item);                 // 아이템에 붙여서 함께 이동
+        tag->setPos(QPointF(3,3));
 
         mPieces.push_back(item);
     }
@@ -287,10 +355,13 @@ void PlayPage::trySnap(QGraphicsPixmapItem *piece, double tolerance)
     if (!piece) return;
 
     if (tolerance <= 0.0)
-        tolerance = 0.35 * qMin(mCellSize.width(), mCellSize.height());
+        tolerance = 0.40 * qMin(mCellSize.width(), mCellSize.height()); // 살짝 완화
 
     const int id = piece->data(0).toInt();
-    if (id < 0 || id >= mSlotCenters.size()) return;
+    if (id < 0 || id >= mSlotCenters.size()) {
+        qWarning() << "[Snap] invalid id" << id;
+        return;
+    }
 
     if (id < mOccupant.size() && mOccupant[id] && mOccupant[id] != piece)
         return;
@@ -299,9 +370,19 @@ void PlayPage::trySnap(QGraphicsPixmapItem *piece, double tolerance)
     const QPointF pieceCenter  = piece->sceneBoundingRect().center();
     const qreal   dist         = QLineF(pieceCenter, targetCenter).length();
 
+    qDebug().nospace()
+      << "[SnapTry] id=" << id
+      << " dist=" << dist
+      << " tol=" << tolerance
+      << " pieceCenter=(" << pieceCenter.x() << "," << pieceCenter.y() << ")"
+      << " target=(" << targetCenter.x() << "," << targetCenter.y() << ")"
+      << " pieceSize=" << piece->boundingRect().width() << "x" << piece->boundingRect().height() << ")";
+
     if (dist <= tolerance) {
         placePieceAtSlot(piece, id);
-        qDebug() << "정답 스냅 성공! id=" << id << "dist=" << dist;
+        qDebug() << "[SnapOK] id=" << id;
+    } else {
+        qDebug() << "[SnapNG] id=" << id;
     }
 }
 
