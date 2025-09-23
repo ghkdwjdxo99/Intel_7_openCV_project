@@ -19,7 +19,7 @@
      <item>
       <layout class="QVBoxLayout" name="verticalLayout_3">
        <item>
-        <widget class="PuzzleBoard" name="PuzzleBoard"/>
+        <widget class="PuzzleBoard" name="PuzzleBoardView"/>
        </item>
       </layout>
      </item>
