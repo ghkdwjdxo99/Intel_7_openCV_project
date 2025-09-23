@@ -47,6 +47,7 @@ private:
     int elapsedSeconds;
     int hintCount;
     void trySnap(QGraphicsPixmapItem *piece, double tolerance);
+    void loadPiecesFromDir(const QString &dirPath);
 
     // 🎯 퍼즐판을 그릴 QGraphicsScene
     QGraphicsScene *mScene = nullptr;
@@ -56,6 +57,15 @@ private:
 
     // 🎯 조각 저장 (Step 2에서 단순히 드래그만, Step 3부터 스냅에 활용)
     QVector<QGraphicsPixmapItem*> mPieces;
+
+    // 각 슬롯(칸)의 정답 중심 좌표 [id = r*cols + c]
+    QVector<QPointF> mSlotCenters;
+    // (선택) 슬롯 점유 상태: 해당 슬롯에 붙은 조각 포인터, 없으면 nullptr
+    QVector<QGraphicsPixmapItem*> mOccupant;
+
+    // 근접 빈 슬롯 찾기 / 배치 함수
+    int  nearestFreeSlotIndex(const QPointF& pieceCenter, qreal& outDist) const;
+    void placePieceAtSlot(QGraphicsPixmapItem* piece, int slotIndex);
 
     // 🎯 퍼즐판 행/열, 셀 크기, 좌상단 위치 (초기값은 임시로 세팅)
     int mRows = 4;
