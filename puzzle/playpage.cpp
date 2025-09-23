@@ -4,6 +4,7 @@
 #include "successdialog.h"
 #include "faildialog.h"
 #include "solutiondialog.h"
+#include "puzzleboard.h"
 
 #include <QStackedWidget>
 #include <QMetaObject>
@@ -24,6 +25,7 @@ PlayPage::PlayPage(QWidget *parent) :
     elapsedSeconds(0)
 {
     ui->setupUi(this);
+    ui->PuzzleBoard->configure(/*rows*/8, /*cols*/8, QSizeF(640,640)); // 5x5면 5,5
 
     // 타이머와 슬롯 연결
     connect(timer, &QTimer::timeout, this, &PlayPage::updateTime);
