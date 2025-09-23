@@ -1,15 +1,15 @@
 # -------------------------
 # OS / 편집기 임시 파일
 # -------------------------
-.DS_Store
-Thumbs.db
-*.swp
-*.swo
-*~
-*.tmp
-*.bak
-*.old
-*.autosave
+**/.DS_Store
+**/Thumbs.db
+**/*.swp
+**/*.swo
+**/*~
+**/*.tmp
+**/*.bak
+**/*.old
+**/*.autosave
 
 # -------------------------
 # 빌드 산출물 (어느 폴더든 전부 무시)
@@ -24,10 +24,20 @@ Thumbs.db
 **/*.bin
 **/*.elf
 
+# -------------------------
+# 이미지 파일 무시 (어느 폴더든 전부 무시)
+# -------------------------
+**/*.jpg
+**/*.jpeg
+**/*.png
+**/*.bmp
+
+# -------------------------
 # Linux/Qt 실행 파일 (확장자 없는 바이너리)
-puzzle             # 루트 실행 파일
-*/puzzle           # 하위 폴더 실행 파일
-**/puzzle          # 깊은 하위 폴더까지 실행 파일
+# -------------------------
+puzzle
+*/puzzle
+**/puzzle
 
 # -------------------------
 # 빌드 디렉토리 (모든 위치)
@@ -47,55 +57,55 @@ build-puzzle-Desktop-Debug/
 # -------------------------
 # CMake / Ninja
 # -------------------------
-CMakeFiles/
-CMakeCache.txt
-cmake_install.cmake
-Makefile
-*.ninja
-.ninja_deps
-.ninja_log
+**/CMakeFiles/
+**/CMakeCache.txt
+**/cmake_install.cmake
+**/Makefile
+**/*.ninja
+**/.ninja_deps
+**/.ninja_log
 
 # -------------------------
 # Qt 관련
 # -------------------------
-*.pro.user
-*.qmake.stash
-*.qmake.cache
-*.qmlc
-*.jsc
-*.moc
-*.moc.cpp
-moc_*
-ui_*.h
-qrc_*.cpp
-*.qmlproject.user
-*.qmlproject.user.*
+**/*.pro.user
+**/*.qmake.stash
+**/*.qmake.cache
+**/*.qmlc
+**/*.jsc
+**/*.moc
+**/*.moc.cpp
+**/moc_*
+**/ui_*.h
+**/qrc_*.cpp
+**/*.qmlproject.user
+**/*.qmlproject.user.*
 
 # -------------------------
 # IDE 관련
 # -------------------------
 # Qt Creator
-*.pro.user.*
-*.creator
-*.creator.user*
-*.files
-*.includes
-*.config
+**/*.pro.user.*
+**/*.creator
+**/*.creator.user*
+**/*.files
+**/*.includes
+**/*.config
 
 # JetBrains (CLion 등)
-.idea/
+**/.idea/
 
 # VSCode
-.vscode/
+**/.vscode/
 
 # Qt Creator / qmake build directories
-build-*/
+**/build-*/
 
 # CMake build directories (혹시 쓸 경우)
-cmake-build-*/
+**/cmake-build-*/
 
 # Generated MOC/UIC/RCC files
-*.moc
-moc_*.cpp
-ui_*.h
-qrc_*.cpp
+**/*.moc
+**/moc_*.cpp
+**/ui_*.h
+**/qrc_*.cpp
