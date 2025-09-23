@@ -9,6 +9,8 @@ QT_BEGIN_NAMESPACE
 namespace Ui { class make_puzzle_image; }
 QT_END_NAMESPACE
 
+class QGraphicsScene; // forward declaration
+
 // -------------------------------
 // 마스크 드래그용 클래스
 // -------------------------------
@@ -23,7 +25,6 @@ public:
         setZValue(10);
     }
 
-    // 배경 영역(씬 좌표계)을 넘지 않도록 이동 경계 설정
     void setMoveBounds(const QRectF &bounds) { m_bounds = bounds; }
 
 protected:
@@ -31,18 +32,15 @@ protected:
         setCursor(Qt::ClosedHandCursor);
         QGraphicsPixmapItem::mousePressEvent(event);
     }
-
     void mouseReleaseEvent(QGraphicsSceneMouseEvent *event) override {
         setCursor(Qt::OpenHandCursor);
         QGraphicsPixmapItem::mouseReleaseEvent(event);
     }
-
     void mouseMoveEvent(QGraphicsSceneMouseEvent *event) override {
         QGraphicsPixmapItem::mouseMoveEvent(event);
 
         if (!scene() || !m_bounds.isValid()) return;
 
-        // 현재 아이템의 씬 좌표 사각형
         QRectF itemRect = sceneBoundingRect();
         QPointF p = pos();
 
@@ -59,11 +57,11 @@ protected:
     }
 
 private:
-    QRectF m_bounds; // 이동 가능 경계(배경 이미지 영역)
+    QRectF m_bounds;
 };
 
 // -------------------------------
-// 기존 makePuzzleImage 클래스
+// makePuzzleImage
 // -------------------------------
 class makePuzzleImage : public QWidget
 {
@@ -76,12 +74,13 @@ public:
 
 signals:
     void showPlayPage();
+    void piecesReady();   // ← 새로 추가: 조각 저장 완료 신호
 
 public slots:
     void loadCapturedImage();
 
 private slots:
-    void on_make_puzzle_btn_clicked();  // 여기서 합쳐서 저장까지 수행
+    void on_make_puzzle_btn_clicked();
 
 private:
     Ui::make_puzzle_image *make_puzzle_image_ui;
@@ -91,7 +90,7 @@ private:
     QGraphicsPixmapItem*   m_bgItem  {nullptr};
     DraggablePixmapItem*   m_maskItem{nullptr};
 
-    QString m_capturePath;   // 캡처 이미지 경로 저장용 (추가)
+    QString m_capturePath;   // 캡처 이미지 경로
 };
 
 #endif // MAKEPUZZLEIMAGE_H

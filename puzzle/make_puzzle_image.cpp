@@ -5,6 +5,7 @@
 #include <QDir>
 #include <QPixmap>
 #include <QDebug>
+#include <QCoreApplication>   // ← 사용 중이므로 명시적으로 포함
 
 #include <opencv2/opencv.hpp>
 #include <filesystem>
@@ -60,17 +61,21 @@ void makePuzzleImage::on_make_puzzle_btn_clicked()
         qDebug() << "퍼즐 이미지 저장 실패:" << outPath;
     }
 
-    // ⭐ 수정: OpenCV 기반 퍼즐 분할 추가
+    // ⭐ OpenCV 기반 퍼즐 분할
     {
+        // 캡처된 원본 이미지
         cv::Mat cvCapture = cv::imread(m_capturePath.toStdString());
         if (cvCapture.empty()) {
             qWarning() << "캡처 이미지 OpenCV 로드 실패:" << m_capturePath;
             return;
         }
 
-        // 드래그된 마스크 위치
+        // 드래그된 마스크 위치(씬 좌표 → 픽셀)
         QRectF maskRect = m_maskItem->sceneBoundingRect();
-        cv::Rect roi(maskRect.x(), maskRect.y(), maskRect.width(), maskRect.height());
+        cv::Rect roi(static_cast<int>(maskRect.x()),
+                     static_cast<int>(maskRect.y()),
+                     static_cast<int>(maskRect.width()),
+                     static_cast<int>(maskRect.height()));
 
         roi.x = std::max(0, roi.x);
         roi.y = std::max(0, roi.y);
@@ -83,15 +88,17 @@ void makePuzzleImage::on_make_puzzle_btn_clicked()
 
         cv::Mat roiImg = cvCapture(roi).clone();
 
-        // 퍼즐 마스크 로드
-        cv::Mat mask;
+        // 퍼즐 마스크 로드 (app dir 기준)
+        std::string appBase = QCoreApplication::applicationDirPath().toStdString();
+        std::string maskPath;
         if (m_puzzleType == 5)
-            mask = cv::imread("./images/puzzle_mask_5x5.png", cv::IMREAD_GRAYSCALE);
+            maskPath = appBase + "/images/puzzle_mask_5x5.png";
         else
-            mask = cv::imread("./images/puzzle_mask_8x8.png", cv::IMREAD_GRAYSCALE);
+            maskPath = appBase + "/images/puzzle_mask_8x8.png";
 
+        cv::Mat mask = cv::imread(maskPath, cv::IMREAD_GRAYSCALE);
         if (mask.empty()) {
-            qWarning() << "퍼즐 마스크 OpenCV 로드 실패!";
+            qWarning() << "퍼즐 마스크 OpenCV 로드 실패:" << QString::fromStdString(maskPath);
             return;
         }
 
@@ -99,22 +106,27 @@ void makePuzzleImage::on_make_puzzle_btn_clicked()
         cv::Mat maskResized;
         cv::resize(mask, maskResized, roiImg.size());
 
-        // ⭐ 여기서 puzzle_piece_save.cpp에 있던 makePuzzlePieces() 사용
+        // 조각 생성
         auto pieces = puzzle_piece_save::makePuzzlePieces(roiImg, maskResized);
 
-        // 저장 경로 정리
-        std::filesystem::remove_all("./images/piece_image/");
-        std::filesystem::create_directories("./images/piece_image/");
+        // 저장 경로 (app dir 통일)
+        std::string pieceDir = appBase + "/images/piece_image";
+        std::error_code ec;
+        // 디렉토리 없으면 생성 (clearFolder는 파일만 지우므로 폴더가 없을 가능성도 있음)
+        std::filesystem::create_directories(pieceDir, ec);
 
-        // 퍼즐 조각 저장 (pieces[i].img는 이미 RGBA)
+        // 퍼즐 조각 저장
         for (size_t i = 0; i < pieces.size(); ++i) {
-            std::string pieceName = "./images/piece_image/piece_" + std::to_string(i) + ".png";
-            cv::imwrite(pieceName, pieces[i].img);   // ← 그대로 저장하면 투명 배경 유지
+            std::string pieceName = pieceDir + "/piece_" + std::to_string(i) + ".png";
+            cv::imwrite(pieceName, pieces[i].img);
         }
 
-        qDebug() << "퍼즐 조각 저장 완료!";
+        qDebug() << "퍼즐 조각 저장 완료:" << QString::fromStdString(pieceDir);
+
+        // 🔔 NEW: 조각 저장이 모두 끝났음을 알림 (PlayPage에서 onPiecesReady() 연결)
+        emit piecesReady();
     }
-    // ⭐ 수정 끝
+    // ⭐ 끝
 
     // 기존 동작 유지(필요 시 페이지 전환)
     emit showPlayPage();
@@ -181,5 +193,3 @@ void makePuzzleImage::loadCapturedImage()
     // 보기 맞춤(배경 기준)
     view->fitInView(m_bgItem, Qt::KeepAspectRatio);
 }
-
-

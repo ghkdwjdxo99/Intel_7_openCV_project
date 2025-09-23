@@ -24,7 +24,7 @@ void puzzle::on_cameraButton_clicked()
     if (dlg.exec() == QDialog::Accepted) {
         int type = dlg.selectedPuzzleType();
         qDebug() << "카메라 버튼 → 선택된 퍼즐 타입:" << type;
-        clearFolder("../puzzle/images/chapture_image");
+        clearFolder("../puzzle/images/capture_image");
         clearFolder("../puzzle/images/piece_image");
 
         emit switchToWebcam(type);   // 선택값 전달
@@ -43,7 +43,7 @@ void puzzle::on_cameraButton_clicked()
 
 void puzzle::on_imageButton_clicked()
 {
-    clearFolder("../puzzle/images/chapture_image");
+    clearFolder("../puzzle/images/capture_image");
     clearFolder("../puzzle/images/piece_image");
 
     PuzzleSelectDialog dlg(this);
