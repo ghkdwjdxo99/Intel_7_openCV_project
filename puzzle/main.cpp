@@ -11,13 +11,28 @@
 #include <QApplication>
 #include <QStackedWidget>
 
+#include <QFile>
+#include <QFontDatabase>
+
 #define QT_DEBUG
 
 int g_puzzleType = 0;   // 퍼즐 타입 저장
 
+
+static void loadStyle() {
+    QFontDatabase::addApplicationFont(":/fonts/NotoSansKR-Regular.otf");
+    qApp->setFont(QFont("Noto Sans KR", 11));
+
+    QFile f(":/qss/app.qss");
+    if (f.open(QIODevice::ReadOnly)) {
+        qApp->setStyleSheet(QString::fromUtf8(f.readAll()));
+    }
+}
+
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
+    loadStyle();
 
     QStackedWidget stacked;
 
