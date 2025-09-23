@@ -19,7 +19,7 @@
      <item>
       <layout class="QVBoxLayout" name="verticalLayout_3">
        <item>
-        <widget class="QGraphicsView" name="PuzzleBoard"/>
+        <widget class="PuzzleBoard" name="PuzzleBoard"/>
        </item>
       </layout>
      </item>
@@ -70,6 +70,13 @@
    </item>
   </layout>
  </widget>
+ <customwidgets>
+  <customwidget>
+   <class>PuzzleBoard</class>
+   <extends>QGraphicsView</extends>
+   <header>puzzleboard.h</header>
+  </customwidget>
+ </customwidgets>
  <resources/>
  <connections/>
 </ui>

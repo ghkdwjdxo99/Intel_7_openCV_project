@@ -5,6 +5,7 @@
 #include "playpage.h"
 #include "successdialog.h"
 #include "faildialog.h"
+
 #include "puzzleboard.h"
 
 #include <QApplication>
@@ -84,20 +85,6 @@ int main(int argc, char *argv[])
     stacked.setCurrentIndex(0);
     stacked.resize(1024, 768);
     stacked.show();
-
-    // ← 여기 아래 테스트 코드
-
-    #ifdef QT_DEBUG
-    auto* board = new PuzzleBoard(8, 8, QSizeF(640, 640));
-    board->setWindowTitle("PuzzleBoard TEST");
-    board->resize(700, 700);
-    board->show();
-
-    QPixmap pixA(80,80); pixA.fill(Qt::lightGray);
-    QPixmap pixB(80,80); pixB.fill(Qt::gray);
-    board->addPiece(pixA, 0, QPointF(-120, 20));
-    board->addPiece(pixB, 1, QPointF(-120, 120));
-    #endif
 
     return a.exec();
 }
