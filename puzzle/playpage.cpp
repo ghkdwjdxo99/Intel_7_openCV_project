@@ -46,7 +46,7 @@ PlayPage::PlayPage(QWidget *parent) :
     mScene->installEventFilter(this);
 
     // ⚠️ 여기서 미리 보드를 만들지 않는다.
-    // setPuzzleBoard(5);
+    // setPuzzleBoard(5);  // 제거!
 }
 
 PlayPage::~PlayPage()
@@ -71,17 +71,24 @@ void PlayPage::showEvent(QShowEvent *event)
     hintCount = 3;
     ui->HintBT->setText("힌트 (3회)");
 
-    // 방금 저장된 조각 수로 퍼즐 타입 자동 판단
+    // 👉 방금 저장된 조각이 있으면 개수로 5x5(25) / 8x8(64) 자동 판단해서 로드
     const QString pieceDir = QCoreApplication::applicationDirPath() + "/images/piece_image";
     QDir d(pieceDir);
     d.setNameFilters({"*.png","*.jpg","*.jpeg","*.bmp"});
     d.setFilter(QDir::Files);
     const int count = d.entryList().size();
 
-    if (count == 25)      setPuzzleBoard(5);
-    else if (count == 64) setPuzzleBoard(8);
-    else if (count > 0)   setPuzzleBoard(5);
-    else                  qDebug() << "[PlayPage] no pieces found yet; waiting.";
+    if (count == 25) {
+        setPuzzleBoard(5);
+    } else if (count == 64) {
+        setPuzzleBoard(8);
+    } else if (count > 0) {
+        // 애매하면 5x5로 시도 (필요시 조정)
+        setPuzzleBoard(5);
+    } else {
+        // 폴더가 비었으면 아무 것도 하지 않음 (piecesReady()로 불러오는 구성이면 자연스럽게 로드됨)
+        qDebug() << "[PlayPage] no pieces found yet; waiting.";
+    }
 }
 
 void PlayPage::updateTime()
@@ -138,28 +145,28 @@ void PlayPage::setPuzzleBoard(int type)
         }
     }
 
-    // ===== 씬 초기화 (이중 삭제 방지!) =====
-    mPieces.clear();   // 포인터 목록만 비움 (실제 삭제는 clear()가 함)
-    mScene->clear();   // 씬 내 아이템을 Qt가 delete
-    // ===================================
+    // 씬 초기화
+    mScene->clear();
 
-    // 1) 마스크 스케일 & 보드 추가
+    // 1) 원본 마스크를 우선 타겟 사이즈(행*셀, 열*셀) 기준으로 스케일하지만,
+    //    실제 스케일 결과의 픽셀 사이즈에서 셀 크기를 재계산하여 정확히 맞춘다.
     QSize tentativeSize(mCols * mCellSize.width(), mRows * mCellSize.height());
     QPixmap scaled = QPixmap::fromImage(maskImg).scaled(
         tentativeSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
 
+    // 보드 아이템 추가
     auto *board = mScene->addPixmap(scaled);
     board->setZValue(-1);
     board->setPos(mTopLeft);
 
-    // 실제 픽셀 크기에서 셀 크기 계산
+    // --- 핵심: 실제 픽셀 크기에서 정확한 셀 크기 계산 ---
     QSize actualPixmapSize = scaled.size();
     QSize actualCellSize(actualPixmapSize.width()  / mCols,
                          actualPixmapSize.height() / mRows);
-    mCellSize = actualCellSize;
-
+    mCellSize = actualCellSize;   // 덮어쓰기: 이후 슬롯/조각에 사용될 값
     QRectF frame(mTopLeft, QSizeF(mCols * mCellSize.width(),
                                   mRows * mCellSize.height()));
+    // --- 끝 ---
 
     // 슬롯 중심 좌표 계산
     mSlotCenters.clear();
@@ -192,7 +199,7 @@ void PlayPage::setPuzzleBoard(int type)
 // 디렉터리에서 조각 로드 후 오른쪽 영역에 랜덤 배치
 void PlayPage::loadPiecesFromDir(const QString &dirPath)
 {
-    // ⚠️ 더 이상 기존 아이템을 remove/delete 하지 않음 (씬 clear 시 이미 삭제됨)
+    for (auto *it : mPieces) { mScene->removeItem(it); delete it; }
     mPieces.clear();
 
     QDir dir(dirPath);
@@ -210,8 +217,8 @@ void PlayPage::loadPiecesFromDir(const QString &dirPath)
 
     auto *rng = QRandomGenerator::global();
     for (int i = 0; i < files.size(); ++i) {
-        const QString fn   = files[i];
-        const QString path = dir.absoluteFilePath(fn);
+        QString fn   = files[i];
+        QString path = dir.absoluteFilePath(fn);
         QPixmap px(path);
         if (px.isNull()) { qWarning() << "조각 로드 실패:" << path; continue; }
 
