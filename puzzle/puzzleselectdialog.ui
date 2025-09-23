@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>700</width>
-    <height>400</height>
+    <width>532</width>
+    <height>342</height>
    </rect>
   </property>
   <property name="maximumSize">
@@ -19,13 +19,13 @@
   <property name="windowTitle">
    <string>Dialog</string>
   </property>
-  <layout class="QHBoxLayout" name="horizontalLayout_3">
+  <layout class="QVBoxLayout" name="verticalLayout_4">
    <item>
-    <layout class="QVBoxLayout" name="verticalLayout_3" stretch="8,2">
+    <layout class="QVBoxLayout" name="verticalLayout_3" stretch="8,0">
      <item>
       <layout class="QHBoxLayout" name="horizontalLayout" stretch="5,5">
        <item>
-        <layout class="QVBoxLayout" name="verticalLayout" stretch="0,8">
+        <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0">
          <item>
           <widget class="QRadioButton" name="check5x5">
            <property name="text">
@@ -58,9 +58,15 @@
         </layout>
        </item>
        <item>
-        <layout class="QVBoxLayout" name="verticalLayout_2" stretch="0,8">
+        <layout class="QVBoxLayout" name="verticalLayout_2" stretch="0,0">
          <item>
           <widget class="QRadioButton" name="check8x8">
+           <property name="tabletTracking">
+            <bool>false</bool>
+           </property>
+           <property name="layoutDirection">
+            <enum>Qt::LeftToRight</enum>
+           </property>
            <property name="text">
             <string>8x8</string>
            </property>
@@ -93,7 +99,7 @@
       </layout>
      </item>
      <item>
-      <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="6,4">
+      <layout class="QHBoxLayout" name="horizontalLayout_2" stretch="0,0">
        <item>
         <spacer name="horizontalSpacer">
          <property name="orientation">
@@ -101,8 +107,8 @@
          </property>
          <property name="sizeHint" stdset="0">
           <size>
-           <width>40</width>
-           <height>20</height>
+           <width>461</width>
+           <height>28</height>
           </size>
          </property>
         </spacer>

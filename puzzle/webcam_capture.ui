@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1085</width>
-    <height>764</height>
+    <width>599</width>
+    <height>604</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -45,7 +45,17 @@
        <item>
         <widget class="QPushButton" name="capture_btn">
          <property name="text">
-          <string>촬영하기</string>
+          <string/>
+         </property>
+         <property name="icon">
+          <iconset>
+           <normaloff>images/camera.png</normaloff>images/camera.png</iconset>
+         </property>
+         <property name="iconSize">
+          <size>
+           <width>100</width>
+           <height>100</height>
+          </size>
          </property>
         </widget>
        </item>
