@@ -47,6 +47,7 @@ private:
     int elapsedSeconds;
     int hintCount;
     void trySnap(QGraphicsPixmapItem *piece, double tolerance);
+    void loadPiecesFromDir(const QString &dirPath);
 
     // 🎯 퍼즐판을 그릴 QGraphicsScene
     QGraphicsScene *mScene = nullptr;

@@ -25,7 +25,7 @@ PlayPage::PlayPage(QWidget *parent) :
     elapsedSeconds(0)
 {
     ui->setupUi(this);
-    ui->PuzzleBoard->configure(/*rows*/8, /*cols*/8, QSizeF(640,640)); // 5x5면 5,5
+    ui->PuzzleBoardView->configure(/*rows*/8, /*cols*/8, QSizeF(640,640)); // 5x5면 5,5
 
     // 타이머와 슬롯 연결
     connect(timer, &QTimer::timeout, this, &PlayPage::updateTime);
@@ -39,8 +39,8 @@ PlayPage::PlayPage(QWidget *parent) :
 
     // === GraphicsScene 연결 ===
     mScene = new QGraphicsScene(this);
-    ui->PuzzleBoard->setScene(mScene);
-    ui->PuzzleBoard->setSceneRect(0, 0, 1280, 720);
+    ui->PuzzleBoardView->setScene(mScene);
+    ui->PuzzleBoardView->setSceneRect(0, 0, 1280, 720);
 
 
     mScene->installEventFilter(this);
@@ -78,6 +78,16 @@ PlayPage::PlayPage(QWidget *parent) :
 
     addOnePiece(QCoreApplication::applicationDirPath()+"/images/piece_image/piece_0.png");
     addOnePiece(QCoreApplication::applicationDirPath()+"/images/piece_image/piece_1.png");
+    addOnePiece(QCoreApplication::applicationDirPath()+"/images/piece_image/piece_2.png");
+    addOnePiece(QCoreApplication::applicationDirPath()+"/images/piece_image/piece_3.png");
+    addOnePiece(QCoreApplication::applicationDirPath()+"/images/piece_image/piece_4.png");
+    addOnePiece(QCoreApplication::applicationDirPath()+"/images/piece_image/piece_5.png");
+    addOnePiece(QCoreApplication::applicationDirPath()+"/images/piece_image/piece_6.png");
+    addOnePiece(QCoreApplication::applicationDirPath()+"/images/piece_image/piece_7.png");
+    addOnePiece(QCoreApplication::applicationDirPath()+"/images/piece_image/piece_8.png");
+    addOnePiece(QCoreApplication::applicationDirPath()+"/images/piece_image/piece_9.png");
+    addOnePiece(QCoreApplication::applicationDirPath()+"/images/piece_image/piece_10.png");
+    qDebug() << "applicationDirPath() : " << QCoreApplication::applicationDirPath();
 }
 
 PlayPage::~PlayPage()
