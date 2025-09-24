@@ -289,8 +289,8 @@ void makePuzzleImage::loadCapturedImage()
     m_bgItem->setPos(0, 0);                                                              // [ADDED]
     m_scene->setSceneRect(QRectF(QPointF(0,0), captured.size()));                        // [CHANGED]
 
-    QRectF bgSceneRect = m_bgItem->mapRectToScene(m_bgItem->boundingRect());
-    m_scene->setSceneRect(bgSceneRect);
+//    QRectF bgSceneRect = m_bgItem->mapRectToScene(m_bgItem->boundingRect());
+//    m_scene->setSceneRect(bgSceneRect);
 
     // 2) 마스크 로드(+흰색 투명화, 검정 불투명)
     const QString maskFile = (m_puzzleType == 8) ? "puzzle_mask_8x8.png"
