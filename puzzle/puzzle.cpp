@@ -58,6 +58,10 @@ void puzzle::on_imageButton_clicked()
         }
     }
 
+    const int type = dlg.selectedPuzzleType();    // [ADDED] 5 또는 8 (이미 구현돼있는 함수라 가정)
+    emit imageImportRequested(type);        // [ADDED]  -> 파일 선택/복사는 main.cpp에서
+
+
 }
 
 
