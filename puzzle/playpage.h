@@ -23,7 +23,8 @@ class PlayPage : public QWidget
 public:
     explicit PlayPage(QWidget *parent = nullptr);
     ~PlayPage();
-    void setPuzzleBoard(int type);  // 퍼즐 보드 설정 함수
+    void setPuzzleBoard(int type);  // 퍼즐 보드 설정 함수]
+    void trySnap(QGraphicsPixmapItem *piece, double tolerance);
 
 protected:
     void showEvent(QShowEvent *event) override;
@@ -46,7 +47,6 @@ private:
     QTimer *timer;
     int elapsedSeconds;
     int hintCount;
-    void trySnap(QGraphicsPixmapItem *piece, double tolerance);
     void loadPiecesFromDir(const QString &dirPath);
 
     // 🎯 퍼즐판을 그릴 QGraphicsScene

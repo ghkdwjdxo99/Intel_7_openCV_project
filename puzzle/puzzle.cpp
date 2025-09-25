@@ -24,7 +24,7 @@ void puzzle::on_cameraButton_clicked()
     if (dlg.exec() == QDialog::Accepted) {
         int type = dlg.selectedPuzzleType();
         qDebug() << "카메라 버튼 → 선택된 퍼즐 타입:" << type;
-        clearFolder("../puzzle/images/chapture_image");
+        clearFolder("../puzzle/images/capture_image");
         clearFolder("../puzzle/images/piece_image");
 
         emit switchToWebcam(type);   // 선택값 전달
@@ -43,7 +43,7 @@ void puzzle::on_cameraButton_clicked()
 
 void puzzle::on_imageButton_clicked()
 {
-    clearFolder("../puzzle/images/chapture_image");
+    clearFolder("../puzzle/images/capture_image");
     clearFolder("../puzzle/images/piece_image");
 
     PuzzleSelectDialog dlg(this);
@@ -57,6 +57,10 @@ void puzzle::on_imageButton_clicked()
             QMessageBox::information(this, "선택 결과", "8x8 퍼즐 선택됨!");
         }
     }
+
+    const int type = dlg.selectedPuzzleType();    // [ADDED] 5 또는 8 (이미 구현돼있는 함수라 가정)
+    emit imageImportRequested(type);        // [ADDED]  -> 파일 선택/복사는 main.cpp에서
+
 
 }
 

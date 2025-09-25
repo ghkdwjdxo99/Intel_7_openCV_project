@@ -4,7 +4,6 @@
 #include "successdialog.h"
 #include "faildialog.h"
 #include "solutiondialog.h"
-// 필요시 promote한 뷰가 있으면 유지
 #include "puzzleboard.h"
 
 #include <QStackedWidget>
@@ -20,6 +19,26 @@
 #include <QRegularExpression>
 #include <QLineF>
 #include <limits>
+#include <QDateTime>
+#include <QSet>
+#include <QFont>
+#include <QBrush>
+#include <QGraphicsOpacityEffect>
+#include <QPropertyAnimation>
+#include <QEasingCurve>
+#include <QAbstractAnimation>
+
+#include <QGraphicsEllipseItem>
+
+
+// -------------------------
+// 파일명에서 숫자(id) 추출
+// -------------------------
+static int parseIdFromFileName(const QString& name) {
+    QRegularExpression re("(\\d+)");
+    auto m = re.match(name);
+    return m.hasMatch() ? m.captured(1).toInt() : -1;
+}
 
 PlayPage::PlayPage(QWidget *parent) :
     QWidget(parent),
@@ -45,8 +64,8 @@ PlayPage::PlayPage(QWidget *parent) :
     // 씬 이벤트 필터(마우스 릴리즈 시 스냅)
     mScene->installEventFilter(this);
 
-    // 기본 퍼즐판 생성 (5x5)
-    setPuzzleBoard(5);
+    // ⚠️ 여기서 미리 보드를 만들지 않는다.
+    // setPuzzleBoard(5);
 }
 
 PlayPage::~PlayPage()
@@ -69,7 +88,19 @@ void PlayPage::showEvent(QShowEvent *event)
     timer->start(1000);
 
     hintCount = 3;
-    ui->HintBT->setText("힌트 (3회)");
+    ui->HintBT->setText(QString("힌트 (%1회)").arg(hintCount));
+
+    // 방금 저장된 조각 수로 퍼즐 타입 자동 판단
+    const QString pieceDir = QCoreApplication::applicationDirPath() + "/images/piece_image";
+    QDir d(pieceDir);
+    d.setNameFilters({"*.png","*.jpg","*.jpeg","*.bmp"});
+    d.setFilter(QDir::Files);
+    const int count = d.entryList().size();
+
+    if (count == 25)      setPuzzleBoard(5);
+    else if (count == 64) setPuzzleBoard(8);
+    else if (count > 0)   setPuzzleBoard(5);
+    else                  qDebug() << "[PlayPage] no pieces found yet; waiting.";
 }
 
 void PlayPage::updateTime()
@@ -87,7 +118,7 @@ void PlayPage::updateTime()
 void PlayPage::on_SolutionBT_clicked()
 {
    SolutionDialog dlg(this);
-   dlg.setImage("./images/capture_image/puzzle_image.png");
+   dlg.setImage(QCoreApplication::applicationDirPath() + "/images/capture_image/puzzle_image.png");
    dlg.exec();
 }
 
@@ -103,6 +134,89 @@ void PlayPage::on_HintBT_clicked()
 }
 
 // 퍼즐판 세팅 (마스크 + 슬롯 중심 계산 + 조각 로드)
+//void PlayPage::setPuzzleBoard(int type)
+//{
+//    QString maskPath;
+//    if (type == 5) { mRows = 5; mCols = 5; maskPath = QCoreApplication::applicationDirPath() + "/images/puzzle_mask_5x5.png"; }
+//    else if (type == 8) { mRows = 8; mCols = 8; maskPath = QCoreApplication::applicationDirPath() + "/images/puzzle_mask_8x8.png"; }
+//    else return;
+
+//    QImage maskImg(maskPath);
+//    if (maskImg.isNull()) {
+//        qWarning() << "퍼즐 마스크 로드 실패:" << maskPath;
+//        return;
+//    }
+
+//    // 흰색 → 투명
+//    maskImg = maskImg.convertToFormat(QImage::Format_ARGB32);
+//    for (int y=0; y<maskImg.height(); ++y) {
+//        QRgb *line = reinterpret_cast<QRgb*>(maskImg.scanLine(y));
+//        for (int x=0; x<maskImg.width(); ++x) {
+//            int r=qRed(line[x]), g=qGreen(line[x]), b=qBlue(line[x]);
+//            if (r>200 && g>200 && b>200) line[x] = qRgba(255,255,255,0);
+//        }
+//    }
+
+//    // ===== 씬 초기화 (이중 삭제 방지!) =====
+//    mPieces.clear();   // 포인터 목록만 비움 (실제 삭제는 clear()가 함)
+//    mScene->clear();   // 씬 내 아이템을 Qt가 delete
+//    // ===================================
+
+//    // 1) 마스크 스케일 & 보드 추가
+//    QSize tentativeSize(mCols * mCellSize.width(), mRows * mCellSize.height());
+//    QPixmap scaled = QPixmap::fromImage(maskImg).scaled(
+//        tentativeSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+
+//    auto *board = mScene->addPixmap(scaled);
+//    board->setZValue(-1);
+//    board->setPos(mTopLeft);
+
+//    // 실제 픽셀 크기에서 셀 크기 계산
+//    QSize actualPixmapSize = scaled.size();
+//    QSize actualCellSize(actualPixmapSize.width()  / mCols,
+//                         actualPixmapSize.height() / mRows);
+//    mCellSize = actualCellSize;
+
+//    QRectF frame(mTopLeft, QSizeF(mCols * mCellSize.width(),
+//                                  mRows * mCellSize.height()));
+
+//    // 슬롯 중심 좌표 계산
+//    mSlotCenters.clear();
+//    for (int r = 0; r < mRows; ++r) {
+//        for (int c = 0; c < mCols; ++c) {
+//            QRectF cell(
+//                mTopLeft.x() + c * mCellSize.width(),
+//                mTopLeft.y() + r * mCellSize.height(),
+//                mCellSize.width(),
+//                mCellSize.height()
+//            );
+//            mSlotCenters.push_back(cell.center());
+//        }
+//    }
+
+//    // 슬롯 점유 초기화
+//    mOccupant.clear();
+//    mOccupant.resize(mRows * mCols);
+//    for (auto &p : mOccupant) p = nullptr;
+
+//    // 무작위 배치 영역
+//    mRandomArea = QRectF(frame.right()+40, frame.top(),
+//                         1280-(frame.right()+40)-40, frame.height());
+
+//    // ▼ 슬롯 인덱스(파란색) 시각화: 조각 id와 대조용
+//    for (int i = 0; i < mSlotCenters.size(); ++i) {
+//        auto *txt = mScene->addSimpleText(QString::number(i), QFont("Noto Sans KR", 10));
+//        txt->setPos(mSlotCenters[i] - QPointF(6, 10)); // 약간 위로
+//        txt->setZValue(1000);
+//        txt->setBrush(QBrush(Qt::blue));
+//    }
+
+//    // 조각 로드
+//    QString piecesDir = QCoreApplication::applicationDirPath() + "/images/piece_image";
+//    loadPiecesFromDir(piecesDir);
+//}
+
+// 퍼즐판 세팅 (마스크 + 슬롯 중심 계산 + 조각 로드)
 void PlayPage::setPuzzleBoard(int type)
 {
     QString maskPath;
@@ -116,6 +230,15 @@ void PlayPage::setPuzzleBoard(int type)
         return;
     }
 
+    // ★ 다음 게임 시작 시 상태 리셋 (1판 종료 때 trySnap()에서 finished=true가 됨)
+    this->setProperty("finished", false);                     // ★ 완료 플래그 해제
+    elapsedSeconds = 0;                                       // ★ 타이머 리셋 (필요 시)
+    if (timer) {                                              // ★ UI 타이머 리셋
+        timer->stop();
+        ui->timerLabel->setText("00:00");
+        timer->start(1000);
+    }
+
     // 흰색 → 투명
     maskImg = maskImg.convertToFormat(QImage::Format_ARGB32);
     for (int y=0; y<maskImg.height(); ++y) {
@@ -126,30 +249,36 @@ void PlayPage::setPuzzleBoard(int type)
         }
     }
 
-    // 씬 초기화
-    mScene->clear();
+    // ===== 씬 초기화 =====
+    if (mScene) {
+        mScene->removeEventFilter(this);   // 혹시 남아있으면 분리
+        mPieces.clear();
+        mScene->clear();
+        ui->PuzzleBoardView->setScene(mScene);
+        ui->PuzzleBoardView->setSceneRect(0, 0, 1280, 720);
+        mScene->installEventFilter(this);  // ★★ 2판부터 스냅 안 되던 원인 해결 포인트
+    }
+    // =====================
 
-    // 1) 원본 마스크를 우선 타겟 사이즈(행*셀, 열*셀) 기준으로 스케일하지만,
-    //    실제 스케일 결과의 픽셀 사이즈에서 셀 크기를 재계산하여 정확히 맞춘다.
+    // 1) 마스크 스케일 & 보드 추가
     QSize tentativeSize(mCols * mCellSize.width(), mRows * mCellSize.height());
     QPixmap scaled = QPixmap::fromImage(maskImg).scaled(
         tentativeSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
 
-    // 보드 아이템 추가
     auto *board = mScene->addPixmap(scaled);
     board->setZValue(-1);
     board->setPos(mTopLeft);
 
-    // --- 핵심: 실제 픽셀 크기에서 정확한 셀 크기 계산 ---
+    // 실제 픽셀 크기에서 셀 크기 계산
     QSize actualPixmapSize = scaled.size();
     QSize actualCellSize(actualPixmapSize.width()  / mCols,
                          actualPixmapSize.height() / mRows);
-    mCellSize = actualCellSize;   // 덮어쓰기: 이후 슬롯/조각에 사용될 값
+    mCellSize = actualCellSize;
+
     QRectF frame(mTopLeft, QSizeF(mCols * mCellSize.width(),
                                   mRows * mCellSize.height()));
-    // --- 끝 ---
 
-    // 슬롯 중심 좌표 계산 (mCellSize를 쓴다 -> 정확하게 맞음)
+    // 슬롯 중심 좌표 계산
     mSlotCenters.clear();
     for (int r = 0; r < mRows; ++r) {
         for (int c = 0; c < mCols; ++c) {
@@ -172,15 +301,104 @@ void PlayPage::setPuzzleBoard(int type)
     mRandomArea = QRectF(frame.right()+40, frame.top(),
                          1280-(frame.right()+40)-40, frame.height());
 
+    // ▼ 슬롯 인덱스(파란색) 시각화: 조각 id와 대조용
+    for (int i = 0; i < mSlotCenters.size(); ++i) {
+        auto *txt = mScene->addSimpleText(QString::number(i), QFont("Noto Sans KR", 10));
+        txt->setPos(mSlotCenters[i] - QPointF(6, 10)); // 약간 위로
+        txt->setZValue(1000);
+        txt->setBrush(QBrush(Qt::blue));
+    }
+
     // 조각 로드
-    QString piecesDir = QCoreApplication::applicationDirPath() + "/../puzzle/images/piece_image";
+    QString piecesDir = QCoreApplication::applicationDirPath() + "/images/piece_image";
     loadPiecesFromDir(piecesDir);
+#if 0
+    QString maskPath;
+    if (type == 5) { mRows = 5; mCols = 5; maskPath = QCoreApplication::applicationDirPath() + "/images/puzzle_mask_5x5.png"; }
+    else if (type == 8) { mRows = 8; mCols = 8; maskPath = QCoreApplication::applicationDirPath() + "/images/puzzle_mask_8x8.png"; }
+    else return;
+
+    QImage maskImg(maskPath);
+    if (maskImg.isNull()) {
+        qWarning() << "퍼즐 마스크 로드 실패:" << maskPath;
+        return;
+    }
+
+    // 흰색 → 투명
+    maskImg = maskImg.convertToFormat(QImage::Format_ARGB32);
+    for (int y=0; y<maskImg.height(); ++y) {
+        QRgb *line = reinterpret_cast<QRgb*>(maskImg.scanLine(y));
+        for (int x=0; x<maskImg.width(); ++x) {
+            int r=qRed(line[x]), g=qGreen(line[x]), b=qBlue(line[x]);
+            if (r>200 && g>200 && b>200) line[x] = qRgba(255,255,255,0);
+        }
+    }
+
+    // ===== 씬 초기화 (이중 삭제 방지!) =====
+    mPieces.clear();   // 포인터 목록만 비움 (실제 삭제는 clear()가 함)
+    mScene->clear();   // 씬 내 아이템을 Qt가 delete
+    // ===================================
+
+    // 1) 마스크 스케일 & 보드 추가
+    QSize tentativeSize(mCols * mCellSize.width(), mRows * mCellSize.height());
+    QPixmap scaled = QPixmap::fromImage(maskImg).scaled(
+        tentativeSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+
+    auto *board = mScene->addPixmap(scaled);
+    board->setZValue(-1);
+    board->setPos(mTopLeft);
+
+    // 실제 픽셀 크기에서 셀 크기 계산
+    QSize actualPixmapSize = scaled.size();
+    QSize actualCellSize(actualPixmapSize.width()  / mCols,
+                         actualPixmapSize.height() / mRows);
+    mCellSize = actualCellSize;
+
+    QRectF frame(mTopLeft, QSizeF(mCols * mCellSize.width(),
+                                  mRows * mCellSize.height()));
+
+    // 슬롯 중심 좌표 계산
+    mSlotCenters.clear();
+    for (int r = 0; r < mRows; ++r) {
+        for (int c = 0; c < mCols; ++c) {
+            QRectF cell(
+                mTopLeft.x() + c * mCellSize.width(),
+                mTopLeft.y() + r * mCellSize.height(),
+                mCellSize.width(),
+                mCellSize.height()
+            );
+            mSlotCenters.push_back(cell.center());
+        }
+    }
+
+    // 슬롯 점유 초기화
+    mOccupant.clear();
+    mOccupant.resize(mRows * mCols);
+    for (auto &p : mOccupant) p = nullptr;
+
+    // 무작위 배치 영역
+    mRandomArea = QRectF(frame.right()+40, frame.top(),
+                         1280-(frame.right()+40)-40, frame.height());
+
+    // ▼ 슬롯 인덱스(파란색) 시각화: 조각 id와 대조용
+    for (int i = 0; i < mSlotCenters.size(); ++i) {
+        auto *txt = mScene->addSimpleText(QString::number(i), QFont("Noto Sans KR", 10));
+        txt->setPos(mSlotCenters[i] - QPointF(6, 10)); // 약간 위로
+        txt->setZValue(1000);
+        txt->setBrush(QBrush(Qt::blue));
+    }
+
+    // 조각 로드
+    QString piecesDir = QCoreApplication::applicationDirPath() + "/images/piece_image";
+    loadPiecesFromDir(piecesDir);
+#endif
 }
+
 
 // 디렉터리에서 조각 로드 후 오른쪽 영역에 랜덤 배치
 void PlayPage::loadPiecesFromDir(const QString &dirPath)
 {
-    for (auto *it : mPieces) { mScene->removeItem(it); delete it; }
+    // ⚠️ 더 이상 기존 아이템을 remove/delete 하지 않음 (씬 clear 시 이미 삭제됨)
     mPieces.clear();
 
     QDir dir(dirPath);
@@ -190,22 +408,51 @@ void PlayPage::loadPiecesFromDir(const QString &dirPath)
     }
 
     dir.setNameFilters({"*.png","*.jpg","*.jpeg","*.bmp"});
-    dir.setSorting(QDir::Name);
+    dir.setSorting(QDir::Name); // piece_0, piece_1 ... 순
 
     QStringList files = dir.entryList();
     int need = mRows*mCols;
     files = files.mid(0, qMin(need, files.size()));
 
+    // 결측/중복 간단 점검
+    {
+        QSet<int> ids;
+        for (const auto& fn : files) {
+            int id = parseIdFromFileName(fn);
+            if (id >= 0) ids.insert(id);
+        }
+        for (int i = 0; i < need; ++i) {
+            if (!ids.contains(i))
+                qWarning() << "[Check] missing piece id:" << i;
+        }
+    }
+
     auto *rng = QRandomGenerator::global();
     for (int i = 0; i < files.size(); ++i) {
-        QString fn   = files[i];
-        QString path = dir.absoluteFilePath(fn);
+        const QString fn   = files[i];
+        const QString path = dir.absoluteFilePath(fn);
+
         QPixmap px(path);
         if (px.isNull()) { qWarning() << "조각 로드 실패:" << path; continue; }
 
-        QPixmap scaled = px.scaled(mCellSize, Qt::KeepAspectRatioByExpanding,
-                                   Qt::SmoothTransformation);
+        // ▶ 모든 조각을 '원본 비율'로 동일 배수 k 만큼 확대
+        const qreal k =
+            (mRows == 5 && mCols == 5) ? 1.00 :
+            (mRows == 8 && mCols == 8) ? 1.25 :
+                                         1.00; // 기본값(안전)
 
+        const QSize targetSize(
+            qRound(px.width()  * k),
+            qRound(px.height() * k)
+        );
+
+        // 비율을 유지해서 정확히 k배로
+        QPixmap scaled = px.scaled(targetSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+        // (px.width()*k, px.height()*k 이므로 KeepAspectRatio/IgnoreAspectRatio 모두 결과는 같지만,
+        //  의미상 비율 유지가 맞으니 KeepAspectRatio 권장)
+
+
+        // 무작위 배치 위치 계산
         qreal minX=mRandomArea.left(), maxX=mRandomArea.right()-scaled.width();
         qreal minY=mRandomArea.top(),  maxY=mRandomArea.bottom()-scaled.height();
         if (maxX<minX) maxX=minX;
@@ -214,22 +461,194 @@ void PlayPage::loadPiecesFromDir(const QString &dirPath)
         qreal rx = minX+(maxX-minX)*rng->generateDouble();
         qreal ry = minY+(maxY-minY)*rng->generateDouble();
 
+        // 조각 아이템 생성
         auto *item = mScene->addPixmap(scaled);
         item->setPos(rx, ry);
         item->setFlag(QGraphicsItem::ItemIsMovable,true);
         item->setFlag(QGraphicsItem::ItemIsSelectable,true);
         item->setZValue(10);
 
-        // (선택) 정답 슬롯 id로 쓰고 싶다면 다음 줄 유지: 현재는 사용 안 함
-        item->setData(0, i);
+        // 파일명에서 정답 슬롯 id 파싱
+        int parsedId = parseIdFromFileName(fn);
+        item->setData(0, parsedId);   // ★ 정답 슬롯 id
+        item->setData(1, -1);         // 현재 슬롯 기록
 
-        // 현재 배치 슬롯 기록용 (없음 = -1)
-        item->setData(1, -1);
+        // --- 앵커 파싱: _ax{X}_ay{Y}
+        QRegularExpression re_ax("_ax(-?\\d+)(?=\\D|$)");
+        QRegularExpression re_ay("_ay(-?\\d+)(?=\\D|$)");
+
+        int ax = -1, ay = -1;
+        auto mx = re_ax.match(fn);
+        auto my = re_ay.match(fn);
+        if (mx.hasMatch()) ax = mx.captured(1).toInt();
+        if (my.hasMatch()) ay = my.captured(1).toInt();
+
+        // 스케일 보정: px → scaled 로 크기가 변했으므로 앵커도 동일 배율 적용
+        const qreal sx = scaled.width()  / static_cast<qreal>(px.width());
+        const qreal sy = scaled.height() / static_cast<qreal>(px.height());
+        QPointF anchorScaled(
+            (ax >= 0 ? ax * sx : scaled.width()  / 2.0),
+            (ay >= 0 ? ay * sy : scaled.height() / 2.0)
+        );
+
+        // data(2)에 로컬좌표계 앵커 저장
+        item->setData(2, anchorScaled);
+
+        // 디버그 로그
+        qDebug().nospace()
+          << "[PieceLoad] file=" << fn
+          << " parsedId=" << parsedId
+          << " scaled=" << scaled.width() << "x" << scaled.height()
+          << " cell=" << mCellSize.width() << "x" << mCellSize.height()
+          << " anchor=(" << anchorScaled.x() << "," << anchorScaled.y() << ")";
+
+        // 조각 id 시각화(빨간색): 슬롯 번호(파랑)와 눈으로 대조 가능
+        auto *tag = mScene->addSimpleText(QString::number(parsedId), QFont("Noto Sans KR", 9));
+        tag->setBrush(Qt::red);
+        tag->setZValue(item->zValue()+1);
+        tag->setParentItem(item);                 // 아이템에 붙여서 함께 이동
+        tag->setPos(QPointF(3,3));
 
         mPieces.push_back(item);
     }
     qDebug() << "조각 로드 완료:" << mPieces.size();
+    qDebug().nospace()
+        << "[" << QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss.zzz") << "] "
+        << "Loading pieces from " << dirPath << "  filesFound=" << files.size()
+        << "  need=" << need;
 }
+
+// 디렉터리에서 조각 로드 후 오른쪽 영역에 랜덤 배치
+//void PlayPage::loadPiecesFromDir(const QString &dirPath)
+//{
+//    // ⚠️ 더 이상 기존 아이템을 remove/delete 하지 않음 (씬 clear 시 이미 삭제됨)
+//    mPieces.clear();
+
+//    QDir dir(dirPath);
+//    if (!dir.exists()) {
+//        qWarning() << "조각 폴더 없음:" << dirPath;
+//        return;
+//    }
+
+//    dir.setNameFilters({"*.png","*.jpg","*.jpeg","*.bmp"});
+//    dir.setSorting(QDir::Name); // piece_0, piece_1 ... 순
+
+//    QStringList files = dir.entryList();
+//    int need = mRows*mCols;
+//    files = files.mid(0, qMin(need, files.size()));
+
+//    // 결측/중복 간단 점검
+//    {
+//        QSet<int> ids;
+//        for (const auto& fn : files) {
+//            int id = parseIdFromFileName(fn);
+//            if (id >= 0) ids.insert(id);
+//        }
+//        for (int i = 0; i < need; ++i) {
+//            if (!ids.contains(i))
+//                qWarning() << "[Check] missing piece id:" << i;
+//        }
+//    }
+
+//    auto *rng = QRandomGenerator::global();
+//    for (int i = 0; i < files.size(); ++i) {
+//        const QString fn   = files[i];
+//        const QString path = dir.absoluteFilePath(fn);
+
+//        QPixmap px(path);
+//        if (px.isNull()) { qWarning() << "조각 로드 실패:" << path; continue; }
+
+//        // ▶ 모든 조각을 '원본 비율'로 동일 배수 k 만큼 확대
+////        const qreal k = 1.00; // 원하는 값으로 조절(예: 1.10~1.50)
+//        const qreal k = 1.25; // 원하는 값으로 조절(예: 1.10~1.50)
+
+//        const QSize targetSize(
+//            qRound(px.width()  * k),
+//            qRound(px.height() * k)
+//        );
+
+//        QPixmap scaled = px.scaled(targetSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+
+//        // 무작위 배치 위치 계산
+//        qreal minX=mRandomArea.left(), maxX=mRandomArea.right()-scaled.width();
+//        qreal minY=mRandomArea.top(),  maxY=mRandomArea.bottom()-scaled.height();
+//        if (maxX<minX) maxX=minX;
+//        if (maxY<minY) maxY=minY;
+
+//        qreal rx = minX+(maxX-minX)*rng->generateDouble();
+//        qreal ry = minY+(maxY-minY)*rng->generateDouble();
+
+//        // 조각 아이템 생성
+//        auto *item = mScene->addPixmap(scaled);
+//        item->setPos(rx, ry);
+//        item->setFlag(QGraphicsItem::ItemIsMovable,true);
+//        item->setFlag(QGraphicsItem::ItemIsSelectable,true);
+//        item->setZValue(10);
+
+//        // 파일명에서 정답 슬롯 id 파싱
+//        int parsedId = parseIdFromFileName(fn);
+//        item->setData(0, parsedId);   // ★ 정답 슬롯 id
+//        item->setData(1, -1);         // 현재 슬롯 기록
+
+//        // --- 앵커 파싱: _ax{X}_ay{Y}
+//        QRegularExpression re_ax("_ax(-?\\d+)(?=\\D|$)");
+//        QRegularExpression re_ay("_ay(-?\\d+)(?=\\D|$)");
+//        int ax = -1, ay = -1;
+//        auto mx = re_ax.match(fn);
+//        auto my = re_ay.match(fn);
+//        if (mx.hasMatch()) ax = mx.captured(1).toInt();
+//        if (my.hasMatch()) ay = my.captured(1).toInt();
+
+//        // 스케일 보정: px → scaled 로 크기가 변했으므로 앵커도 동일 배율 적용
+//        const qreal sx = scaled.width()  / static_cast<qreal>(px.width());
+//        const qreal sy = scaled.height() / static_cast<qreal>(px.height());
+//        QPointF anchorScaled(
+//            (ax >= 0 ? ax * sx : scaled.width()  / 2.0),
+//            (ay >= 0 ? ay * sy : scaled.height() / 2.0)
+//        );
+
+//        // data(2)에 로컬좌표계 앵커 저장
+//        item->setData(2, anchorScaled);
+
+//        // 디버그 로그
+//        qDebug().nospace()
+//          << "[PieceLoad] file=" << fn
+//          << " parsedId=" << parsedId
+//          << " scaled=" << scaled.width() << "x" << scaled.height()
+//          << " cell=" << mCellSize.width() << "x" << mCellSize.height()
+//          << " anchor=(" << anchorScaled.x() << "," << anchorScaled.y() << ")";
+
+//        // 조각 id 시각화(빨간색): 슬롯 번호(파랑)와 눈으로 대조 가능
+//        auto *tag = mScene->addSimpleText(QString::number(parsedId), QFont("Noto Sans KR", 9));
+//        tag->setBrush(Qt::red);
+//        tag->setZValue(item->zValue()+1);
+//        tag->setParentItem(item);                 // 아이템에 붙여서 함께 이동
+//        tag->setPos(QPointF(3,3));
+
+//        // ▼ 중심점(초록색 점) 추가 ———— 여기만 신규 코드 ————
+//        {
+//            const qreal r = 4.0;                                      // 점 반지름
+//            QPointF c = item->boundingRect().center();                // 조각 로컬 중심
+//            auto *dot = new QGraphicsEllipseItem(-r, -r, 2*r, 2*r, item); // 부모=조각
+//            dot->setBrush(Qt::green);
+//            dot->setPen(Qt::NoPen);
+//            dot->setZValue(item->zValue()+2);
+//            dot->setPos(c);                                          // 로컬 중심에 배치
+
+//            // 화면 확대/축소와 무관하게 점의 화면 크기를 고정하고 싶다면 아래 라인 주석 해제
+//            // dot->setFlag(QGraphicsItem::ItemIgnoresTransformations, true);
+//        }
+//        // ————————————————————————————————————————————————
+
+//        mPieces.push_back(item);
+//    }
+//    qDebug() << "조각 로드 완료:" << mPieces.size();
+//    qDebug().nospace()
+//        << "[" << QDateTime::currentDateTime().toString("yyyy-MM-dd HH:mm:ss.zzz") << "] "
+//        << "Loading pieces from " << dirPath << "  filesFound=" << files.size()
+//        << "  need=" << need;
+//}
+
 
 // 가장 가까운 "빈" 슬롯 인덱스 찾기
 int PlayPage::nearestFreeSlotIndex(const QPointF& pieceCenter, qreal& outDist) const
@@ -238,7 +657,7 @@ int PlayPage::nearestFreeSlotIndex(const QPointF& pieceCenter, qreal& outDist) c
     int best = -1;
 
     for (int i = 0; i < mSlotCenters.size(); ++i) {
-        if (i < mOccupant.size() && mOccupant[i]) continue; // 점유된 슬롯은 제외
+        if (i < mOccupant.size() && mOccupant[i]) continue; // 점유된 슬롯 제외
         qreal d = QLineF(pieceCenter, mSlotCenters[i]).length();
         if (d < outDist) { outDist = d; best = i; }
     }
@@ -252,14 +671,17 @@ void PlayPage::placePieceAtSlot(QGraphicsPixmapItem* piece, int slotIndex)
     if (slotIndex < 0 || slotIndex >= mSlotCenters.size()) return;
 
     // 이전 슬롯 점유 해제
-    int prev = piece->data(1).toInt(); // data(1): 현재 들어간 슬롯 기록
+    int prev = piece->data(1).toInt();
     if (prev >= 0 && prev < mOccupant.size() && mOccupant[prev] == piece) {
         mOccupant[prev] = nullptr;
     }
 
     // 새 슬롯으로 스냅
     const QPointF targetCenter = mSlotCenters[slotIndex];
-    piece->setPos(targetCenter - piece->boundingRect().center());
+    QVariant v = piece->data(2);
+    QPointF anchorLocal = v.isValid() ? v.toPointF()
+                                      : piece->boundingRect().center(); // fallback
+    piece->setPos(targetCenter - anchorLocal);
     piece->setFlag(QGraphicsItem::ItemIsMovable, false);
     piece->setFlag(QGraphicsItem::ItemIsSelectable, false);
     piece->setZValue(1);
@@ -268,33 +690,86 @@ void PlayPage::placePieceAtSlot(QGraphicsPixmapItem* piece, int slotIndex)
     piece->setData(1, slotIndex);
 }
 
-// 스냅: 가장 가까운 "빈" 슬롯이 임계값 이내면 붙이기
+// 스냅: 정답 슬롯에만 끌림
 void PlayPage::trySnap(QGraphicsPixmapItem *piece, double tolerance)
 {
     if (!piece) return;
 
-    // 기본 임계값: 셀 크기 35%
     if (tolerance <= 0.0)
-        tolerance = 0.35 * qMin(mCellSize.width(), mCellSize.height());
+        tolerance = 0.40 * qMin(mCellSize.width(), mCellSize.height()); // 살짝 완화
 
-    // 이 조각의 정답 슬롯
     const int id = piece->data(0).toInt();
-    if (id < 0 || id >= mSlotCenters.size()) return;
+    if (id < 0 || id >= mSlotCenters.size()) {
+        qWarning() << "[Snap] invalid id" << id;
+        return;
+    }
 
-    // 정답 슬롯이 이미 다른 조각으로 점유되어 있으면 스냅 금지
     if (id < mOccupant.size() && mOccupant[id] && mOccupant[id] != piece)
         return;
 
     const QPointF targetCenter = mSlotCenters[id];
-    const QPointF pieceCenter  = piece->sceneBoundingRect().center();
-    const qreal   dist         = QLineF(pieceCenter, targetCenter).length();
+
+    // 로컬 앵커 → 씬 좌표로 변환
+    QVariant v = piece->data(2);
+    QPointF anchorLocal = v.isValid() ? v.toPointF()
+                                      : piece->boundingRect().center(); // fallback
+    QPointF anchorScene = piece->mapToScene(anchorLocal);
+
+    // 앵커 기준 거리
+    const qreal dist = QLineF(anchorScene, targetCenter).length();
+
+    qDebug().nospace()
+      << "[SnapTry] id=" << id
+      << " dist=" << dist
+      << " tol=" << tolerance
+      << " anchorScene=(" << anchorScene.x() << "," << anchorScene.y() << ")"
+      << " target=(" << targetCenter.x() << "," << targetCenter.y() << ")"
+      << " pieceSize=" << piece->boundingRect().width() << "x" << piece->boundingRect().height() << ")";
 
     if (dist <= tolerance) {
-        // ★ 정답 위치 안으로 들어왔을 때만 스냅 + 잠금
         placePieceAtSlot(piece, id);
-        qDebug() << "정답 스냅 성공! id=" << id << "dist=" << dist;
+        qDebug() << "[SnapOK] id=" << id;
+
+        // ─────────────────────────────
+        // ✅ 모든 조각이 제자리에 있으면 즉시 최종 이미지로 교체
+        //    (중복 실행 방지를 위해 동적 프로퍼티 'finished' 사용)
+        bool complete = true;
+        for (int i = 0; i < mOccupant.size(); ++i) {
+            if (!mOccupant[i] || mOccupant[i]->data(0).toInt() != i) { complete = false; break; }
+        }
+        if (complete && !this->property("finished").toBool()) {
+            this->setProperty("finished", true);
+
+            // 더 이상 스냅/이벤트 안 받도록 약간 정리
+            if (timer) timer->stop();
+            if (mScene) mScene->removeEventFilter(this);
+
+            // 장면 내용 정리 후 최종 이미지 표시
+            mScene->clear();
+
+            const QString finalPath =
+                QCoreApplication::applicationDirPath() + "/images/capture_image/puzzle_image.png";
+            QPixmap finalPx(finalPath);
+
+            if (!finalPx.isNull()) {
+                const QSize boardSize(mCols * mCellSize.width(),
+                                      mRows * mCellSize.height());
+                QPixmap scaled = finalPx.scaled(boardSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+                auto *pix = mScene->addPixmap(scaled);
+                pix->setZValue(0);
+                pix->setPos(mTopLeft);
+            } else {
+                qWarning() << "[Finalize] final image load failed:" << finalPath;
+            }
+
+            // 필요하면 성공 다이얼로그/시그널
+             emit puzzleFinished(elapsedSeconds, true);
+        }
+        // ─────────────────────────────
+    } else {
+        qDebug() << "[SnapNG] id=" << id;
     }
-    // else: 근처가 아니면 아무것도 하지 않음(계속 움직일 수 있음)
+
 }
 
 // 마우스 릴리즈 시 스냅 시도
@@ -304,11 +779,10 @@ bool PlayPage::eventFilter(QObject *watched, QEvent *event)
         auto *e = static_cast<QGraphicsSceneMouseEvent*>(event);
         const QPointF pos = e->scenePos();
 
-        // 릴리즈 지점에서 최상단 조각 하나 선택
         const auto under = mScene->items(pos);
         for (QGraphicsItem *it : under) {
             if (auto *piece = qgraphicsitem_cast<QGraphicsPixmapItem*>(it)) {
-                trySnap(piece, 0.0); // 0.0 → trySnap에서 비율로 tol 계산
+                trySnap(piece, 0.0); // 0.0 → 내부에서 비율로 tol 계산
                 break;
             }
         }
