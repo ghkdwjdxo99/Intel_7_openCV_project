@@ -228,7 +228,7 @@ void makePuzzleImage::on_make_puzzle_btn_clicked()
         bool L=false, R=false, T=false, B=false;
         detectEdgeTouches(P.img, L, R, T, B);
         double fx = 1.00;                       // 기본(한쪽만 돌기 등)
-        if ((L && R) || (T && B)) fx = 1.35;    // 양옆 또는 상하 돌기 → 더 크게 (튜닝 가능)
+        if ((L && R) || (T && B)) fx = 1.00;    // 양옆 또는 상하 돌기 → 더 크게 (튜닝 가능)
 
         const int fxInt = static_cast<int>(std::round(fx * 100.0)); // 125 등
 
