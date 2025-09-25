@@ -230,6 +230,100 @@ void PlayPage::setPuzzleBoard(int type)
         return;
     }
 
+    // ★ 다음 게임 시작 시 상태 리셋 (1판 종료 때 trySnap()에서 finished=true가 됨)
+    this->setProperty("finished", false);                     // ★ 완료 플래그 해제
+    elapsedSeconds = 0;                                       // ★ 타이머 리셋 (필요 시)
+    if (timer) {                                              // ★ UI 타이머 리셋
+        timer->stop();
+        ui->timerLabel->setText("00:00");
+        timer->start(1000);
+    }
+
+    // 흰색 → 투명
+    maskImg = maskImg.convertToFormat(QImage::Format_ARGB32);
+    for (int y=0; y<maskImg.height(); ++y) {
+        QRgb *line = reinterpret_cast<QRgb*>(maskImg.scanLine(y));
+        for (int x=0; x<maskImg.width(); ++x) {
+            int r=qRed(line[x]), g=qGreen(line[x]), b=qBlue(line[x]);
+            if (r>200 && g>200 && b>200) line[x] = qRgba(255,255,255,0);
+        }
+    }
+
+    // ===== 씬 초기화 =====
+    if (mScene) {
+        mScene->removeEventFilter(this);   // 혹시 남아있으면 분리
+        mPieces.clear();
+        mScene->clear();
+        ui->PuzzleBoardView->setScene(mScene);
+        ui->PuzzleBoardView->setSceneRect(0, 0, 1280, 720);
+        mScene->installEventFilter(this);  // ★★ 2판부터 스냅 안 되던 원인 해결 포인트
+    }
+    // =====================
+
+    // 1) 마스크 스케일 & 보드 추가
+    QSize tentativeSize(mCols * mCellSize.width(), mRows * mCellSize.height());
+    QPixmap scaled = QPixmap::fromImage(maskImg).scaled(
+        tentativeSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+
+    auto *board = mScene->addPixmap(scaled);
+    board->setZValue(-1);
+    board->setPos(mTopLeft);
+
+    // 실제 픽셀 크기에서 셀 크기 계산
+    QSize actualPixmapSize = scaled.size();
+    QSize actualCellSize(actualPixmapSize.width()  / mCols,
+                         actualPixmapSize.height() / mRows);
+    mCellSize = actualCellSize;
+
+    QRectF frame(mTopLeft, QSizeF(mCols * mCellSize.width(),
+                                  mRows * mCellSize.height()));
+
+    // 슬롯 중심 좌표 계산
+    mSlotCenters.clear();
+    for (int r = 0; r < mRows; ++r) {
+        for (int c = 0; c < mCols; ++c) {
+            QRectF cell(
+                mTopLeft.x() + c * mCellSize.width(),
+                mTopLeft.y() + r * mCellSize.height(),
+                mCellSize.width(),
+                mCellSize.height()
+            );
+            mSlotCenters.push_back(cell.center());
+        }
+    }
+
+    // 슬롯 점유 초기화
+    mOccupant.clear();
+    mOccupant.resize(mRows * mCols);
+    for (auto &p : mOccupant) p = nullptr;
+
+    // 무작위 배치 영역
+    mRandomArea = QRectF(frame.right()+40, frame.top(),
+                         1280-(frame.right()+40)-40, frame.height());
+
+    // ▼ 슬롯 인덱스(파란색) 시각화: 조각 id와 대조용
+    for (int i = 0; i < mSlotCenters.size(); ++i) {
+        auto *txt = mScene->addSimpleText(QString::number(i), QFont("Noto Sans KR", 10));
+        txt->setPos(mSlotCenters[i] - QPointF(6, 10)); // 약간 위로
+        txt->setZValue(1000);
+        txt->setBrush(QBrush(Qt::blue));
+    }
+
+    // 조각 로드
+    QString piecesDir = QCoreApplication::applicationDirPath() + "/images/piece_image";
+    loadPiecesFromDir(piecesDir);
+#if 0
+    QString maskPath;
+    if (type == 5) { mRows = 5; mCols = 5; maskPath = QCoreApplication::applicationDirPath() + "/images/puzzle_mask_5x5.png"; }
+    else if (type == 8) { mRows = 8; mCols = 8; maskPath = QCoreApplication::applicationDirPath() + "/images/puzzle_mask_8x8.png"; }
+    else return;
+
+    QImage maskImg(maskPath);
+    if (maskImg.isNull()) {
+        qWarning() << "퍼즐 마스크 로드 실패:" << maskPath;
+        return;
+    }
+
     // 흰색 → 투명
     maskImg = maskImg.convertToFormat(QImage::Format_ARGB32);
     for (int y=0; y<maskImg.height(); ++y) {
@@ -297,6 +391,7 @@ void PlayPage::setPuzzleBoard(int type)
     // 조각 로드
     QString piecesDir = QCoreApplication::applicationDirPath() + "/images/piece_image";
     loadPiecesFromDir(piecesDir);
+#endif
 }
 
 
