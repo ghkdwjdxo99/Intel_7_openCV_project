@@ -9,6 +9,8 @@
 
 #include <opencv2/opencv.hpp>
 #include <filesystem>
+#include <QTimer>                 // [ADDED]
+#include <QPainter>               // [ADDED] (RenderHint 쓴다면)
 #include <vector>
 #include <algorithm>
 
@@ -226,7 +228,7 @@ void makePuzzleImage::on_make_puzzle_btn_clicked()
         bool L=false, R=false, T=false, B=false;
         detectEdgeTouches(P.img, L, R, T, B);
         double fx = 1.00;                       // 기본(한쪽만 돌기 등)
-        if ((L && R) || (T && B)) fx = 1.35;    // 양옆 또는 상하 돌기 → 더 크게 (튜닝 가능)
+        if ((L && R) || (T && B)) fx = 1.00;    // 양옆 또는 상하 돌기 → 더 크게 (튜닝 가능)
 
         const int fxInt = static_cast<int>(std::round(fx * 100.0)); // 125 등
 
@@ -264,18 +266,31 @@ void makePuzzleImage::loadCapturedImage()
     view->setDragMode(QGraphicsView::NoDrag);
     view->setInteractive(true);
 
+    // 보기 품질/스케일 안정화 옵션
+    view->setRenderHints(QPainter::Antialiasing | QPainter::SmoothPixmapTransform); // [ADDED]
+    view->setResizeAnchor(QGraphicsView::AnchorViewCenter);                          // [ADDED]
+    view->setTransformationAnchor(QGraphicsView::AnchorViewCenter);                  // [ADDED]
+    view->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);                      // [ADDED]
+    view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);                        // [ADDED]
+
     // 1) 배경
     const QString imgPath = QCoreApplication::applicationDirPath()
                           + "/images/capture_image/capture_image.jpg";
     m_capturePath = imgPath;   // 캡처 경로 저장
     QPixmap captured(imgPath);
-    if (captured.isNull()) { qDebug() << "배경 이미지 로드 실패:" << imgPath; return; }
+    if (captured.isNull()) {
+        qDebug() << "배경 이미지 로드 실패:" << imgPath;
+        return;
+    }
 
+    // 배경 아이템을 (0,0)에 두고, 장면 경계를 명시적으로 "이미지 크기"로 설정  [CHANGED]
     m_bgItem = m_scene->addPixmap(captured);
     m_bgItem->setZValue(0);
+    m_bgItem->setPos(0, 0);                                                              // [ADDED]
+    m_scene->setSceneRect(QRectF(QPointF(0,0), captured.size()));                        // [CHANGED]
 
-    QRectF bgSceneRect = m_bgItem->mapRectToScene(m_bgItem->boundingRect());
-    m_scene->setSceneRect(bgSceneRect);
+//    QRectF bgSceneRect = m_bgItem->mapRectToScene(m_bgItem->boundingRect());
+//    m_scene->setSceneRect(bgSceneRect);
 
     // 2) 마스크 로드(+흰색 투명화, 검정 불투명)
     const QString maskFile = (m_puzzleType == 8) ? "puzzle_mask_8x8.png"
@@ -305,6 +320,8 @@ void makePuzzleImage::loadCapturedImage()
     m_maskItem = new DraggablePixmapItem(scaledMask);
     m_scene->addItem(m_maskItem);
 
+    // 중앙 배치
+    const QRectF bgSceneRect = m_scene->sceneRect();                                    // [ADDED] (위에서 명시한 sceneRect 사용)
     QRectF maskRect = m_maskItem->boundingRect();
     m_maskItem->setPos( (bgSceneRect.width()  - maskRect.width())  / 2.0,
                         (bgSceneRect.height() - maskRect.height()) / 2.0 );
@@ -312,6 +329,93 @@ void makePuzzleImage::loadCapturedImage()
     // 배경 밖 이동 금지
     m_maskItem->setMoveBounds(bgSceneRect);
 
-    // 보기 맞춤(배경 기준)
-    view->fitInView(m_bgItem, Qt::KeepAspectRatio);
+    // ========== 여기서가 포인트 ==========
+    // 1) 지금 즉시 한 번 맞추고
+    view->resetTransform();                                                             // [ADDED]
+    view->fitInView(m_scene->itemsBoundingRect(), Qt::KeepAspectRatio);                // [CHANGED] (m_bgItem -> itemsBoundingRect)
+
+    // 2) '레이아웃이 실제로 잡힌 뒤' 다시 한 번 맞춘다 (※ 이게 "점처럼 보이는" 문제 대부분 해결)  [ADDED]
+    QTimer::singleShot(0, this, [this]{
+        auto *v = make_puzzle_image_ui->capture_image_graphicsView;
+        if (!m_scene) return;
+        v->resetTransform();
+        v->fitInView(m_scene->itemsBoundingRect(), Qt::KeepAspectRatio);
+    });
 }
+
+
+
+//void makePuzzleImage::loadCapturedImage()
+//{
+//    m_scene = new QGraphicsScene(this);
+//    auto *view  = make_puzzle_image_ui->capture_image_graphicsView;
+//    view->setScene(m_scene);
+//    view->setDragMode(QGraphicsView::NoDrag);
+//    view->setInteractive(true);
+
+//    // 1) 배경
+//    const QString imgPath = QCoreApplication::applicationDirPath()
+//                          + "/images/capture_image/capture_image.jpg";
+//    m_capturePath = imgPath;   // 캡처 경로를 멤버에 저장
+//    QPixmap captured(imgPath);
+//    if (captured.isNull()) { qDebug() << "배경 이미지 로드 실패:" << imgPath; return; }
+
+//    m_bgItem = m_scene->addPixmap(captured);
+//    m_bgItem->setZValue(0);
+
+//    QRectF bgSceneRect = m_bgItem->mapRectToScene(m_bgItem->boundingRect());
+//    m_scene->setSceneRect(bgSceneRect);
+
+//    // 배경 아이템을 (0,0)에 두고, 장면 경계를 명시적으로 "이미지 크기"로 설정  [CHANGED]
+//    m_bgItem = m_scene->addPixmap(captured);
+//    m_bgItem->setZValue(0);
+//    m_bgItem->setPos(0, 0);                                                              // [ADDED]
+//    m_scene->setSceneRect(QRectF(QPointF(0,0), captured.size()));
+
+//    // 2) 마스크 로드(+투명화)
+//    const QString maskFile = (m_puzzleType == 8) ? "puzzle_mask_8x8.png"
+//                                                 : "puzzle_mask_5x5.png";
+//    const QString maskPath = QCoreApplication::applicationDirPath()
+//                           + "/images/" + maskFile;
+
+//    QImage maskImg(maskPath);
+//    if (maskImg.isNull()) { qDebug() << "마스크 로드 실패:" << maskPath; return; }
+
+//    maskImg = maskImg.convertToFormat(QImage::Format_ARGB32);
+//    for (int y = 0; y < maskImg.height(); ++y) {
+//        QRgb *line = reinterpret_cast<QRgb*>(maskImg.scanLine(y));
+//        for (int x = 0; x < maskImg.width(); ++x) {
+//            const int r = qRed(line[x]), g = qGreen(line[x]), b = qBlue(line[x]);
+//            line[x] = (r > 200 && g > 200 && b > 200) ? qRgba(255,255,255,0)
+//                                                      : qRgba(0,0,0,255);
+//        }
+//    }
+
+//    QPixmap maskPixmap = QPixmap::fromImage(maskImg);
+//    QPixmap scaledMask = maskPixmap.scaled(captured.size(),
+//                                           Qt::KeepAspectRatio,
+//                                           Qt::SmoothTransformation);
+
+//    // 4) 마스크 아이템(드래그 가능)
+//    m_maskItem = new DraggablePixmapItem(scaledMask);
+//    m_scene->addItem(m_maskItem);
+
+
+//    QRectF maskRect = m_maskItem->boundingRect();
+//    m_maskItem->setPos( (bgSceneRect.width()  - maskRect.width())  / 2.0,
+//                        (bgSceneRect.height() - maskRect.height()) / 2.0 );
+
+//    // 배경 밖 이동 금지
+//    m_maskItem->setMoveBounds(bgSceneRect);
+
+//    // 보기 맞춤(배경 기준)
+////    view->fitInView(m_bgItem, Qt::KeepAspectRatio);
+
+//    // ▼▼ 중요: 뷰 변환 리셋 후, 배경에 딱 맞게 다시 맞춤 ▼▼
+//    view->resetTransform();                                        // [ADDED]
+//    view->fitInView(m_bgItem, Qt::KeepAspectRatio);                // [ADDED]
+//    view->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);    // [ADDED]
+//    view->setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);      // [ADDED]
+
+
+//}
